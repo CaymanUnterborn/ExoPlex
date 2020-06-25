@@ -1,0 +1,7 @@
+/sphinx/
+/__pycache__/
+*.pyc
+/sphinx/_build/*
+/build/*
+*.tmp
+*.pyc
