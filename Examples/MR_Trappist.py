@@ -20,6 +20,7 @@ water_rad_frac_guess = 0.1
 water_potential_temp = 300.
 
 combine_phases = True
+use_grids = True
 
 T1_masses = [1.070,1.156,0.297,0.772,0.934,1.148,0.331]
 T1_radii = [1.121,1.095,0.784,0.910,1.046,1.148,0.773]
@@ -98,11 +99,11 @@ if __name__ == "__main__":
     ######### Initalize and run ExoPlex
     for i in range(number_of_runs):
         Mass_planet = np.random.normal(Mass_planet_avg, Mass_planet_sigma, 1)[0]
-        print "Iteration # ", str(i) , "of ", number_of_runs
-        print "Chosen Mass", str('%.2f'%Mass_planet), "Earth Masses"
+        print ("Iteration # ", str(i) , "of ", number_of_runs)
+        print ("Chosen Mass", str('%.2f'%Mass_planet), "Earth Masses")
 
-        compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,mol_frac_Fe_mantle,wt_frac_Si_core, \
-                              wt_frac_O_core,wt_frac_S_core,combine_phases]
+        compositional_params = [wt_frac_water, FeMg, SiMg, CaMg, AlMg, mol_frac_Fe_mantle, wt_frac_Si_core, \
+                                wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids]
 
         filename = exo.functions.find_filename(compositional_params)
 
@@ -130,13 +131,13 @@ if __name__ == "__main__":
         # Planet.get('alpha') = list of values of thermal expansivity points from calculation (1/K)
         # Planet.get('cp') = list of values of specific heat points from calculation (SI)
         # Planet.get('phases') = list of phases and their molar fractions
-        print
-        print "Mass = ", '%.3f' % (Planet['mass'][-1] / 5.97e24), "Earth masses"
-        print "Radius = ", '%.3f' % (Planet['radius'][-1] / 6371e3), "Earth radii"
-        print "Core Mass Fraction = ", '%.2f' % (100. * Planet['mass'][num_core_layers] / Planet['mass'][-1])
-        print "Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers] / Planet['radius'][-1])
-        print "CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 10000), "GPa"
-        print
+        print ()
+        print ("Mass = ", '%.3f' % (Planet['mass'][-1] / 5.97e24), "Earth masses")
+        print ("Radius = ", '%.3f' % (Planet['radius'][-1] / 6371e3), "Earth radii")
+        print ("Core Mass Fraction = ", '%.2f' % (100. * Planet['mass'][num_core_layers] / Planet['mass'][-1]))
+        print ("Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers] / Planet['radius'][-1]))
+        print ("CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 10000), "GPa")
+        print())
         #print "WMB pressure", '%.2f' % (Planet['pressure'][num_core_layers+num_mantle_layers] / 10000), "GPa"
         Output_mass.append(Mass_planet)
         Output_radii.append(Planet['radius'][-1]/6371e3)
