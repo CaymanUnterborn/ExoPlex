@@ -137,7 +137,7 @@ if __name__ == "__main__":
         print ("Core Mass Fraction = ", '%.2f' % (100. * Planet['mass'][num_core_layers] / Planet['mass'][-1]))
         print ("Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers] / Planet['radius'][-1]))
         print ("CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 10000), "GPa")
-        print())
+        print ()
         #print "WMB pressure", '%.2f' % (Planet['pressure'][num_core_layers+num_mantle_layers] / 10000), "GPa"
         Output_mass.append(Mass_planet)
         Output_radii.append(Planet['radius'][-1]/6371e3)
