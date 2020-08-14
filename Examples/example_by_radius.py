@@ -19,23 +19,23 @@ core_rad_frac_guess = 0.5
 water_rad_frac_guess = 0.
 water_potential_temp = 300.
 
-combine_phases = False
-use_grids = False
+combine_phases = True
+use_grids = True
 
 import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Mass_planet = 1 # in Earth masses
     Radius_planet =1.
     #Need to give the run a name. This will be used as the name of the output files
-    Star = 'Earth_small'
+    Output_filename = 'Filename'
+
 
     #Next user must input the ratios by mole (Earth is Ca/Mg = .07, Si.Mg = 0.90, Al/Mg = 0.09, Fe/Mg = 0.9)
     CaMg = 0.07
     SiMg = 0.9
     AlMg = 0.09
-    FeMg = .45
+    FeMg = 0.9
 
     #How much water do you want in your planet? By mass fraction.
     wt_frac_water = 0.0
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     wt_frac_Si_core = 0. #by mass <1
     wt_frac_O_core = 0. #by mass
     wt_frac_S_core = 0. #by mass
-    mol_frac_Fe_mantle =0.75#by mole
+    mol_frac_Fe_mantle =0. #by mole
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -64,12 +64,6 @@ if __name__ == "__main__":
     num_mantle_layers = 300
     num_core_layers = 400
 
-    #create filename to store values
-    Output_filename = 'Kep10_test_FeO'
-
-    number_of_runs = 1
-    Output_radii = []
-    Output_mass = []
 
 
     ######### Initalize and run ExoPlex
@@ -119,10 +113,7 @@ if __name__ == "__main__":
     Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
     exo.functions.write(Planet,Output_filename)
 
-    print Planet['density'][num_core_layers:][0],Planet['density'][num_core_layers:][1]
 
-    print sum(Planet['density'][num_core_layers:])/len(Planet['density'][num_core_layers:])
-    print  sum(Planet['gravity'][num_core_layers:])/len(Planet['gravity'][num_core_layers:])
     #Now let us plot
     import matplotlib.pyplot as plt
 

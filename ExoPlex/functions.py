@@ -1,7 +1,9 @@
 import numpy as np
 import sys
 from scipy import interpolate
-#check cmaj, fmaj
+
+import ExoPlex.planet as planet
+import minphys
 
 def get_percents(*args):
 
@@ -706,8 +708,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     Planet: dictionary
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
     """
-    import ExoPlex.planet
-    import ExoPlex.minphys
+
 
     def calc_CRF(value, args):
         radius_planet = args[0]
@@ -796,7 +797,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         from scipy.optimize import brentq
         args = [radius_planet, structure_params, compositional_params, layers,grids,Core_wt_per,core_mass_frac]
 
-        structure_params[6] = brentq(calc_CRF,0.1,0.75,args=args,xtol=1e-4)
+        structure_params[6] = brentq(calc_CRF,0.25,0.65,args=args,xtol=1e-4)
         Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, layers])
         Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers])
 
@@ -830,7 +831,6 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
 
     """
-    import ExoPlex.planet as planet
     Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers])
 
@@ -864,7 +864,6 @@ def find_Planet_singlephase(mass_planet, core_mass_frac, structure_params, compo
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
 
     """
-    import planet
     Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
     Planet = planet.compress_mass_single(*[Planet, grids, Core_wt_per, structure_params, layers])
 

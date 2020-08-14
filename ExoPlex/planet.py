@@ -2,7 +2,7 @@ import sys
 import numpy as np
 Earth_radius = 6.371e6
 Earth_mass = 5.97e24
-import ExoPlex.minphys as minphys
+import minphys
 import matplotlib.pyplot as plt
 
 
@@ -138,10 +138,10 @@ def initialize_by_mass(*args):
     mantle_mass = (mass_planet*Earth_mass)-water_mass-core_mass
 
 
-    Radius_planet_guess = 1.3
+    Radius_planet_guess = 1.
 
     mass_layers[0] = 0
-
+    #Update to use BurnMan
     if num_mantle_layers > 0:
         if num_core_layers >0:
             for i in range(num_layers):
@@ -168,12 +168,13 @@ def initialize_by_mass(*args):
                     Temperature_layers[i] = 300.
 
             for i in range(num_layers):
+                #in the water
                 if i > num_core_layers+num_mantle_layers:
                     Pressure_layers[i] = 1
                 else:
+                    #in the core
                     Pressure_layers[i] = (float((5000.-(300.*10000))/float(num_core_layers+num_mantle_layers))*float(i)
                                           + 300.*10000)
-                    Pressure_layers[i] = (1e9/10000)
         else:
             for i in range(num_mantle_layers):
                 mantle_mass = mass_planet * Earth_mass
@@ -183,9 +184,7 @@ def initialize_by_mass(*args):
                 Pressure_layers[i] = (1e8 / 10000)
 
                 Temperature_layers[i] = 1600.
-            #Pressure_layers[-1] = 3000
 
-            #initial temperature guess of 0.5 K per km
 
     elif number_h2o_layers > 0:
         water_mass = mass_planet*Earth_mass
