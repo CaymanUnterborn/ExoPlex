@@ -25,10 +25,10 @@ import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Mass_planet = 2 # in Earth masses
+    Mass_planet = 1 # in Earth masses
     #create filename to store values
 
-    Output_filename = 'high_wFEO'
+    Output_filename = 'Filename'
     #Next user must input the ratios by mole (Earth is Ca/Mg = .07, Si.Mg = 0.90, Al/Mg = 0.09, Fe/Mg = 0.9)
     CaMg = 0.07
     SiMg = 0.9

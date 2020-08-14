@@ -4,7 +4,7 @@
 
 import os
 import sys
-import ExoPlex.minphys
+import ExoPlex.minphys as minphys
 import ExoPlex.functions as functions
 import numpy as np
 # hack to allow scripts to be placed in subdirectories next to burnman:

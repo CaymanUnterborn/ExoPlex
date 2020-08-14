@@ -9,3 +9,4 @@
 *.iml
 *.tsv
 Examples/TRAPPIST-1b_baseline.txt
+*.log
