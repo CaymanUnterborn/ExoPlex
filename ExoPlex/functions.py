@@ -2,8 +2,8 @@ import numpy as np
 import sys
 from scipy import interpolate
 
-import ExoPlex.planet as planet
-import minphys
+from ExoPlex import planet as planet
+from ExoPlex import minphys as minphys
 
 def get_percents(*args):
 
