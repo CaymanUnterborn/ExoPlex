@@ -2,9 +2,8 @@ import sys
 import numpy as np
 Earth_radius = 6.371e6
 Earth_mass = 5.97e24
-import minphys
-import matplotlib.pyplot as plt
 
+from ExoPlex import minphys as minphys
 
 def initialize_by_radius(*args):
     radius_planet = args[0]
