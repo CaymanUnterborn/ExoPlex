@@ -8,7 +8,7 @@ from ExoPlex import minphys as minphys
 def get_percents(*args):
 
     """
-   This module calculates the bulk composition of the mantle given the elemental ratios provided in the input files
+    This module calculates the bulk composition of the mantle given the elemental ratios provided in the input files
 
     Parameters
     ----------
@@ -181,8 +181,8 @@ def get_percents(*args):
 
 def make_mantle_grid(Mantle_filename,UMLM,use_grids):
     """
-   This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
-   by ExoPlex integrators
+    This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
+    by ExoPlex integrators
 
     Parameters
     ----------
@@ -295,7 +295,7 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
 
 def get_phases(Planet,grids,layers,combine_phases):
     """
-   This module creates the output file of Pressure, Temperature and phase fractions
+    This module creates the output file of Pressure, Temperature and phase fractions
 
     Parameters
     ----------
@@ -456,7 +456,7 @@ def get_phases(Planet,grids,layers,combine_phases):
 
 def write(Planet,filename):
     """
-   This module creates the output file for reading later
+    This module creates the output file for reading later
 
     Parameters
     ----------
@@ -499,7 +499,7 @@ def write(Planet,filename):
 
 def find_water_phase(Pressure, Temperature):
     """
-   This module determines the phase of water at a given pressure and temperature
+    This module determines the phase of water at a given pressure and temperature
 
     Parameters
     ----------
@@ -683,8 +683,8 @@ def find_water_phase(Pressure, Temperature):
     return phase
 def find_Planet_radius(radius_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers):
     """
-   This module contains functions to determine the a planet's mass when given radius and composition. Because we conserve the mass ratios of the planet \
-   we must iterate over core mass fraction to match the input composition.
+    This module contains functions to determine the a planet's mass when given radius and composition. Because we conserve the mass ratios of the planet \
+    we must iterate over core mass fraction to match the input composition.
 
     Parameters
     ----------
@@ -806,7 +806,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
 
 def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers):
     """
-   This module contains functions to determine the a planet's radius when given mass and composition.
+    This module contains functions to determine the a planet's radius when given mass and composition.
 
     Parameters
     ----------
@@ -837,41 +837,10 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
 
     return Planet
 
-def find_Planet_singlephase(mass_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers):
-    """
-   This module contains functions to determine the a planet's radius when given mass and composition.
 
-    Parameters
-    ----------
-    radius_planet: float
-        Radius of planet input by user :math:`[m]`
-    core_mass_frac: float
-        Core mass fraction from composition :math:`[wt\%]`
-    structure_params: list
-        Structural parameters of the planet; See example for description
-    compositional_params: list
-        Structural parameters of the planet; See example for description
-    grids: list of lists
-        UM and LM grids containing pressure, temperature, density, expansivity, specific heat and phases
-    Core_wt_per: float
-        Composition of the Core
-    layers: list
-        Number of layers for core, mantle and water
-
-    Returns
-    -------
-    Planet: dictionary
-        Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
-
-    """
-    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
-    Planet = planet.compress_mass_single(*[Planet, grids, Core_wt_per, structure_params, layers])
-
-
-    return Planet
 def find_filename(compositional_params):
     """
-   This module determines the closest compositional grid to pull from for a given composition
+    This module determines the closest compositional grid to pull from for a given composition
 
     Parameters
     ----------

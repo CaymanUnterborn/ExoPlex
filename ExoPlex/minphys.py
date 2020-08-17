@@ -32,7 +32,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     Returns
     -------
     rho_layers: list
-        list of densities for water, mantle and core layers [kg/m^3]
+        list of densities for water, mantle and core layers [kg/m^3']
 
     """
     Pressure_layers = Planet.get('pressure')
