@@ -6,6 +6,29 @@ Earth_mass = 5.97e24
 from ExoPlex import minphys as minphys
 
 def initialize_by_radius(*args):
+    """
+   This module creates the dictionary of lists for each planetary parameter (e.g., density) for a planet of the radius
+   input by user.
+
+    Parameters
+    ----------
+    radius_planet: float
+        input radius of planet in Earth radii
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    compositional_params: list
+        Structural parameters of the planet; See example for description
+
+    layers: list
+        Number of layers for core, mantle and water
+    Returns
+    -------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+        keys = 'radius','density','temperature','gravity','pressure', 'alpha','cp','Vphi''Vp','Vs','K'
+    """
     radius_planet = args[0]
     structural_params = args[1]
     compositional_params = args[2]
@@ -90,6 +113,28 @@ def initialize_by_radius(*args):
                           alpha, cp,Vphi,Vp,Vs,K]))
 
 def initialize_by_mass(*args):
+    """
+   This module creates the dictionary of lists for each planetary parameter (e.g., density) for a planet of the mass
+   input by user.
+
+    Parameters
+    ----------
+    mass_planet: float
+        input radius of planet in Earth radii
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    compositional_params: list
+        Structural parameters of the planet; See example for description
+
+    layers: list
+        Number of layers for core, mantle and water
+    Returns
+    -------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+    """
     mass_planet = args[0]
     structural_params = args[1]
     compositional_params = args[2]
@@ -212,9 +257,38 @@ def initialize_by_mass(*args):
     return dict(zip(keys, [mass_layers, density_layers, Temperature_layers, gravity_layers, Pressure_layers,
                            alpha, cp, Vphi, Vp, Vs, K]))
 def compress_radius(*args):
+    """
+   This module iterates the density, mass within a sphere, adiabatic temperature and gravity integrals for a planet of radius R
+   until convergence is reached. Convergence is defined as the change from the previous run to the current is the
+   difference in the density of all layers is <1e-6.
+
+    Parameters
+    ----------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+
+     grids: list of lists
+        UM and LM grids containing pressure, temperature, density, expansivity, specific heat and phases
+
+    Core_wt_per: float
+        Composition of the Core
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    layers: list
+        Number of layers for core, mantle and water
+    Returns
+    -------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+    """
+
     Planet = args[0]
     grids = args[1]
     Core_wt_per = args[2]
+    print(Core_wt_per)
+    sys.exit()
     structural_params= args[3]
     layers= args[4]
     n_iterations = 1
@@ -251,6 +325,32 @@ def compress_radius(*args):
     return Planet
 
 def compress_mass(*args):
+    """
+   This module iterates the density, mass within a sphere, adiabatic temperature and gravity integrals for a planet of Mass M
+   until convergence is reached. Convergence is defined as the change from the previous run to the current is the
+   difference in the density of all layers is <1e-6.
+
+    Parameters
+    ----------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+
+     grids: list of lists
+        UM and LM grids containing pressure, temperature, density, expansivity, specific heat and phases
+
+    Core_wt_per: float
+        Composition of the Core
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    layers: list
+        Number of layers for core, mantle and water
+    Returns
+    -------
+    Planet: dictionary
+        Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
+    """
     Planet = args[0]
     grids = args[1]
     Core_wt_per = args[2]
@@ -286,49 +386,4 @@ def compress_mass(*args):
 
     return Planet
 
-def compress_mass_single(*args):
 
-    Planet = args[0]
-    grids = args[1]
-    Core_wt_per = args[2]
-    structural_params= args[3]
-    layers= args[4]
-    n_iterations = 1
-
-    max_iterations = 15
-
-
-    old_r = [10  for i in range(len(Planet['mass']))]
-    converge = False
-    print
-
-    while n_iterations <= max_iterations and converge == False:
-        print ("iteration #",n_iterations)
-        if n_iterations>1:
-            converge,old_r = minphys.check_convergence(Planet['density'],old_r)
-
-        for i in range(len(Planet['density'])):
-            if np.isnan(Planet['density'][i]) == True:
-                print ("Density has a nan")
-                print (i, Planet['pressure'][i],Planet['temperature'][i])
-                sys.exit()
-
-        Planet['density'] = minphys.get_rho(Planet,grids,Core_wt_per,layers)
-        Planet['radius'] = minphys.get_radius(Planet, layers)
-        Planet['gravity'] = minphys.get_gravity(Planet,layers)
-        Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
-        Planet['pressure'] = minphys.get_pressure(Planet,layers)
-
-        #print minphys.get_mass(Planet, layers)[-1]/5.97e24
-        #print
-
-        for i in range(len(Planet['temperature'])):
-            if Planet['temperature'][i] > 3500 and Planet['pressure'][i] < 200*10000:
-                Planet['temperature'][i] = Planet['temperature'][i-1] +1
-            if Planet['temperature'][i] > 5000:
-                Planet['temperature'][i] = 5000
-            #if Planet['pressure'][i]/10000 > 800 and layers[0] == 0:
-            #    Planet['pressure'][i] = 800*10000.
-        n_iterations+=1
-
-    return Planet

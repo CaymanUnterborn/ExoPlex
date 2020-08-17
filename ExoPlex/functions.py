@@ -179,32 +179,32 @@ def get_percents(*args):
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
-def make_mantle_grid(Mantle_filename,LMUM,use_grids):
+def make_mantle_grid(Mantle_filename,UMLM,use_grids):
     """
-   This module converts the PerPlex or default grids into proper format and outputs all of the phases expected.
-   PerPlex does not output phases not preset and thus must be 
+   This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
+   by ExoPlex integrators
 
     Parameters
     ----------
-    compositional_params : list of floats
-        List containing molar ratios of planets, fraction of Fe in core, core composition and flags for writing
-        individual phase and whether to use grids
+    Mantle_filename: string
+        name of file either from PerPlex or premade grids
+
+    UMLM: boolean
+        True for upper mantle grids, False for lower mantle grids
+
+    use_grids: boolean
+        True is user is using premade grids, false if using perplex-derived grids
 
     Returns
     -------
-    Core_wt_per : dictionary
-        composition of core for individual elements:math:`[wt\%]`
-    Mantle_wt_per : dictionary
-        composition of mantle in oxides :math:`[wt\%]`
-    Core_mol_per : dictionary
-        composition of core in mole percent
-    core_mass_frac: float
-        Mass of core divided by mass of planet
+    grid_dictionary: dictionary of lists
+        dictionary of individual parameters taken from the phase diagram.
+        Keys include: 'temperature','pressure','density','alpha','cp','phases'
 
     """
 
     if use_grids==True:
-        if LMUM == True:
+        if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')
         else:
             file = open(Mantle_filename+'_LM_results.txt','r')
@@ -253,7 +253,7 @@ def make_mantle_grid(Mantle_filename,LMUM,use_grids):
         keys = ['temperature','pressure','density','alpha','cp','phases']
         return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid,phase_grid])),Phases
     else:
-        if LMUM == True:
+        if UMLM == True:
             file = open(Mantle_filename + '_UM_results.txt', 'r')
         else:
             file = open(Mantle_filename + '_LM_results.txt', 'r')

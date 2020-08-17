@@ -31,16 +31,14 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     Returns
     -------
-    Planet: dictionary
-        Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+    rho_layers: list
+        list of densities for water, mantle and core layers [kg/m^3]
 
     """
     Pressure_layers = Planet.get('pressure')
     Temperature_layers = Planet.get('temperature')
     rho_layers = Planet.get('density')
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
-
-    num_layers = num_mantle_layers+num_core_layers+number_h2o_layers
 
     if num_mantle_layers > 0:
         if num_core_layers > 0:
@@ -221,6 +219,22 @@ def get_rho(Planet,grids,Core_wt_per,layers):
                 rho_layers[i] = get_core_rho(Pressure_layers[i],Temperature_layers[i],Core_wt_per)
         return rho_layers
 def get_water_rho(Pressure,Temperature):
+    """
+   This module calculates the density of water (either as an ice or liquid) given a list of pressures and temperatures
+
+    Parameters
+    ----------
+    pressure: list
+        List of pressures to evaluate for density [bar]
+    temperature: list
+        List of temperatures to evaluate for density [bar]
+
+    Returns
+    -------
+    density: list
+        list of calculated density of water [kg/m^3]
+
+    """
     phase = []
     P_water = []
     T_water = []
@@ -290,7 +304,7 @@ def get_water_rho(Pressure,Temperature):
                     burnman.Mineral.__init__(self)
 
             rock = Ice_Ih()
-            print ("uh oh")
+            #print (No phase"uh oh")
             density_ice.append(rock.evaluate(['density'], 1.e9 * (P_ice[i] / 10000.), T_ice[i])[0])
 
     rock = burnman.minerals.other.water()
@@ -302,6 +316,23 @@ def get_water_rho(Pressure,Temperature):
     return density
 
 def get_water_Cp(Pressure, Temperature):
+    """
+   This module calculates the specific heat at constant pressure of water (either as an ice or liquid) given a
+   single pressure and temperature
+
+    Parameters
+    ----------
+    pressure: float
+        pressure to evaluate for Cp [bar]
+    temperature: list
+        temperature to evaluate for Cp [bar]
+
+    Returns
+    -------
+    Cp: float
+        Calculated specific heat [J/(kg*K)]
+
+    """
     phase = functions.find_water_phase(Pressure,Temperature)
     Pressure = Pressure/10000.
     if phase == 'Water':
@@ -316,6 +347,23 @@ def get_water_Cp(Pressure, Temperature):
 
 
 def get_water_alpha(Pressure,Temperature):
+    """
+   This module calculates the thermal expansivity of water (either as an ice or liquid)
+   given a single pressure and temperature
+
+    Parameters
+    ----------
+    pressure: float
+        pressure to evaluate for Cp [bar]
+    temperature: list
+        temperature to evaluate for Cp [bar]
+
+    Returns
+    -------
+    alpha: float
+        Calculated thermal expansivity [1/K]
+
+    """
     phase = functions.find_water_phase(Pressure, Temperature)
     Pressure = Pressure / 10000.
     if phase == 'Water':
@@ -336,6 +384,24 @@ def get_water_alpha(Pressure,Temperature):
     return 0
 
 def get_core_rho(Pressure,Temperature,Core_wt_per):
+    """
+   This module calculates the density of the core given a list of pressures and temperatures and the light element
+   composition of the core. See documentation for description of how light elements are treated.
+
+    Parameters
+    ----------
+    pressure: list
+        List of pressures to evaluate for density [bar]
+    temperature: list
+        List of temperatures to evaluate for density [bar]
+
+    Returns
+    -------
+    density: list
+        list of calculated density of the core [kg/m^3]
+
+    """
+
     wt_frac_Si = Core_wt_per.get('Si')
     wt_frac_O = Core_wt_per.get('O')
     wt_frac_S = Core_wt_per.get('S')
@@ -376,50 +442,24 @@ def get_core_rho(Pressure,Temperature,Core_wt_per):
     density = rock.evaluate(['density'], 1.e9*(Pressure/10000.), Temperature)[0]
     return density
 
-def get_core_speeds(Pressure,Temperature,Core_wt_per):
-    wt_frac_Si = Core_wt_per.get('Si')
-    wt_frac_O = Core_wt_per.get('O')
-    wt_frac_S = Core_wt_per.get('S')
-    wt_frac_Fe = Core_wt_per.get('Fe')
-
-    mFe = 55.845 #molar weights
-    mSi = 28.0867
-    mO = 15.9994
-    mS = 32.0650
-
-    mol_total = (wt_frac_Fe/mFe)+(wt_frac_O/mO)+(wt_frac_S/mS)+(wt_frac_Si/mSi)
-    mol_frac_Fe = (wt_frac_Fe/mFe) / mol_total
-
-    mol_frac_Si = (wt_frac_Si/mSi) / mol_total
-    mol_frac_S = (wt_frac_S/mS) / mol_total
-    mol_frac_O = (wt_frac_O/mO) / mol_total
-
-    molar_weight_core = (mol_frac_Fe*mFe) + (mol_frac_Si * mSi) + (mol_frac_O*mO) + (mol_frac_S*mS)
-
-    class iron(burnman.Mineral):
-
-        def __init__(self):
-            self.params = {
-                'name': 'iron',
-                'equation_of_state': 'bm4',
-                'V_0': 7.95626e-6,
-                'K_0': 109.7e9,
-                'Kprime_0': 4.66,
-                'Kprime_prime_0': -0.043e-9,
-                'molar_mass': molar_weight_core/1000.,
-            }
-            burnman.Mineral.__init__(self)
-
-    Pressure = [i*((1.e9)/10000.) for i in Pressure]
-    Temperature = [i for i in Temperature]
-
-    rock = iron()
-    speeds = rock.evaluate(['v_phi', 'v_p', 'v_s'], Pressure, Temperature)
-
-    return speeds
-
 
 def get_gravity(Planet,layers):
+    """
+    This module calculates the gravity profile of the planet
+    using Gauss' Law of gravity given the density and radius lists.
+    Parameters
+    ----------
+    Planet: dictionary
+        Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+    layers: list
+        Number of layers for core, mantle and water
+
+    Returns
+    -------
+    gravity: list
+        list of gravities in each shell for water, mantle and core layers [kg/m^2]
+
+    """
     radii = Planet.get('radius')
     density = Planet.get('density')
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
@@ -496,6 +536,22 @@ def get_gravity(Planet,layers):
         return gravity_layers
 
 def get_pressure(Planet,layers):
+    """
+        This module calculates the pressure profile of the planet
+        using the equation for hydrostatic equilibrium given the density and radius lists.
+        Parameters
+        ----------
+        Planet: dictionary
+            Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+        layers: list
+            Number of layers for core, mantle and water
+
+        Returns
+        -------
+        pressure: list
+            list of pressures in each shell for water, mantle and core layers [bar]
+
+    """
     radii = Planet.get('radius')
     density = Planet.get('density')
     gravity = Planet.get('gravity')
@@ -595,6 +651,22 @@ def get_pressure(Planet,layers):
 
 
 def get_mass(Planet,layers):
+    """
+        This module calculates the mass of each individual shell profile of the planet
+        using the equation for mass within a sphere given the density and radius lists.
+        Parameters
+        ----------
+        Planet: dictionary
+            Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+        layers: list
+            Number of layers for core, mantle and water
+
+        Returns
+        -------
+        mass: list
+            list of masses of each shell for water, mantle and core layers [kg/m^2]
+
+    """
     radii = Planet.get('radius')
     density = Planet.get('density')
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
@@ -663,6 +735,22 @@ def get_mass(Planet,layers):
             return np.array(mass_mantle)
 
 def get_radius(Planet,layers):
+    """
+        This module calculates the radius of each individual shell profile of the planet
+        using the equation for density given the density and mass lists.
+        Parameters
+        ----------
+        Planet: dictionary
+            Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+        layers: list
+            Number of layers for core, mantle and water
+
+        Returns
+        -------
+        radius: list
+            list of radius of each shell for water, mantle and core layers [kg/m^2]
+
+    """
     mass = Planet['mass']
     density = Planet['density']
     radius = np.zeros(len(mass))
@@ -675,6 +763,31 @@ def get_radius(Planet,layers):
     return radius
 
 def get_temperature(Planet,grids,structural_parameters,layers):
+    """
+    This module calculates the adiabatic temperature profile of the planet
+    using the equation for an adiabat given the density, gravity, pressure and radius lists as well as the
+    grids of expansivity and specific heat at constant pressure.
+
+    Parameters
+    ----------
+    Planet: dictionary
+        Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
+
+    grids: list of lists
+        UM and LM grids containing pressure, temperature, density, expansivity, specific heat and phases
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    layers: list
+        Number of layers for core, mantle and water
+
+    Returns
+    -------
+    temperature: list
+        list of temperatures in each shell for water, mantle and core layers [kg/m^2]
+
+    """
     radii = Planet.get('radius')
     gravity = Planet.get('gravity')
     temperature = Planet.get('temperature')
@@ -1048,6 +1161,22 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         temperatures = Planet['temperature']
         return temperatures
 def check_convergence(new_rho,old_rho):
+    """
+         This module checks convergence by comparing the density layers of the previous and current runs
+
+         Parameters
+         ----------
+         new_rho: list
+             densities calculated in current iteration
+         old_rho: list
+             densities calculated in previous iteration
+         Returns
+         -------
+         converged: boolean
+            True if converged
+         new_rho: list
+            densities of current iteration
+         """
 
     delta = ([(1.-(old_rho[i]/new_rho[i])) for i in range(len(new_rho))[1:]])
     new_rho = [i for i in new_rho]
