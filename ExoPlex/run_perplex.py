@@ -2,42 +2,68 @@ import os
 import sys
 import pexpect as pe
 
-#PerPlex_path = os.path.dirname(os.path.realpath(__file__))+"/PerPlex"
 
 # hack to allow scripts to be placed in subdirectories next to ExoPlex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
+PerPlex_path = os.path.dirname(os.path.abspath(__file__))+ '/PerPlex'
 
 def run_perplex(*args):
-    PerPlex_path = os.path.dirname(os.path.abspath(__file__))+ '/PerPlex'
+    """
+   This module runs PerPlex to produce mantle phase diagrams for a custom composition
+    if the user opts to not use the premade grids.
+
+    Parameters
+    ----------
+    Mantle_wt_per : dictionary
+        composition of mantle in oxides :math:`[wt\%]`
+
+    compositional_params: list
+        Structural parameters of the planet; See example for description
+
+    structural_params: list
+        Structural parameters of the planet; See example for description
+
+    filename: string
+       chosen filename for output file
+
+    UMLM: boolean
+        True if creating grid for upper mantle, false if lower mantle
+
+    Returns
+    -------
+    Phase diagram: file
+        Mantle phase diagram for the chosen composition. Contains P, T, expansivity, density and specific heat.
+        Stored in /Calc_Solutions/'+filename, where filename is the chosen user name
+    """
+
 
     Mantle_wt_per = args[0]
+    compositional_params = args[1]
 
-    Mantle_wt_per['Al2O3'] = 3.96
-    Mantle_wt_per['SiO2'] = 46.3
-    Mantle_wt_per['MgO'] = 38.4
-    Mantle_wt_per['CaO'] = 3.2
-    Mantle_wt_per['FeO'] = 7.7
+    structure_params = args[2]
 
+    FeMg = compositional_params[1]
+    SiMg = compositional_params[2]
+    CaMg = compositional_params[3]
+    AlMg = compositional_params[4]
+    mol_frac_Fe_mantle = compositional_params[5]
 
-
-
-    FeMg = args[1][1]
-    SiMg = args[1][2]
-    CaMg = args[1][3]
-    AlMg = args[1][4]
-    mol_frac_Fe_mantle = args[1][5]
-    mol_frac_Fe_mantle = args[1][5]
-    use_grids = args[1][-1]
-
-    wt_frac_Si_core = args[1][6]
-
-    Pressure_range_mantle = args[2][0]
-    Temperature_range_mantle = args[2][1]
-    resolution = args[2][2]
+    wt_frac_Si_core = compositional_params[6]
+    use_grids = compositional_params[10]
 
     filename = args[3]
     UMLM = args[4]
+
+    if UMLM == True:
+        Pressure_range_mantle = structure_params[0]
+        Temperature_range_mantle = structure_params[1]
+        resolution = structure_params[2]
+
+    else:
+        Pressure_range_mantle = structure_params[3]
+        Temperature_range_mantle = structure_params[4]
+        resolution = structure_params[5]
 
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
@@ -58,7 +84,6 @@ def run_perplex(*args):
 
     if use_grids == False:
         filename = solutionFileNameMan
-    #print "file",filename+'_UM_results.txt'
 
 
     if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
@@ -70,8 +95,6 @@ def run_perplex(*args):
         return '../Solutions_Small/' + filename
 
     else:
-
-
         if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
             filename = solutionFileNameMan
             print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
@@ -83,27 +106,19 @@ def run_perplex(*args):
             print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
             return '../Calc_Solutions/' + filename
         else:
-
-
             if  UMLM == True:
                 print ('Making upper mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_UM_results.txt')
             else:
 
                 print ('Making lower mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_LM_results.txt')
 
-
-        #we need to shorten the file name for PerPlex to accept it
-
-
-    # define perplex inputs in terms of components, this is for legibility
-    #print "If you see this error, something has gone wrong and PerPlex needs to run. Let's avoid that by exiting."
-    #sys.exit()
     component1 = 'MGO'
     component2 = 'SIO2'
     component3 = 'FEO'
     component4 = 'CAO'
     component5 = 'AL2O3'
     component6 = 'NA2O'
+
     if os.path.isfile(solutionFileNameMan+'.arf')==True:
         os.remove(solutionFileNameMan+'.arf')
         os.remove(solutionFileNameMan+'.blk')
@@ -119,7 +134,6 @@ def run_perplex(*args):
 
 
     p.sendline(solutionFileNameMan)
-    #p.sendline('../ExoPlex_dist/PerPlex/stx11ver.dat')
     p.sendline(PerPlex_path + '/stx11ver.dat')
 
     p.sendline(PerPlex_path + '/perplex_options.dat')

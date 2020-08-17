@@ -6,7 +6,7 @@
 import os
 import sys
 import numpy as np
-# hack to allow scripts to be placed in subdirectories next to burnman:
+# hack to allow scripts to be placed in subdirectories next to exoplex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
 Pressure_range_mantle_UM = '1000 1400000'
