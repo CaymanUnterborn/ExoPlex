@@ -80,7 +80,7 @@ def initialize_by_radius(*args):
 
     for i in range(num_layers):
 
-        if i <num_core_layers:
+        if i <num_core_layers-1:
             radius_layers[i]=((float(i)/num_core_layers)*core_thickness_guess)
             Temperature_layers[i] = 0.
 
@@ -96,9 +96,6 @@ def initialize_by_radius(*args):
             Temperature_layers[i] = 300.
 
     for i in range(num_layers):
-        if i > num_core_layers+num_mantle_layers:
-            Pressure_layers[i] = 1.
-        else:
             Pressure_layers[i] = (float((5000.-(300.*10000))/float(num_core_layers+num_mantle_layers))*float(i)
                                   + 300.*10000)
 
@@ -213,7 +210,7 @@ def initialize_by_mass(*args):
 
             for i in range(num_layers):
                 #in the water
-                if i > num_core_layers+num_mantle_layers:
+                if i >= num_core_layers+num_mantle_layers:
                     Pressure_layers[i] = 1
                 else:
                     #in the core
@@ -287,8 +284,7 @@ def compress_radius(*args):
     Planet = args[0]
     grids = args[1]
     Core_wt_per = args[2]
-    print(Core_wt_per)
-    sys.exit()
+
     structural_params= args[3]
     layers= args[4]
     n_iterations = 1
@@ -362,7 +358,6 @@ def compress_mass(*args):
 
     old_r = [10  for i in range(len(Planet['mass']))]
     converge = False
-    print
 
     while n_iterations <= max_iterations and converge == False:
         print ("iteration #",n_iterations)

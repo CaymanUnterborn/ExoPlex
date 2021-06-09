@@ -5,7 +5,8 @@ from scipy import interpolate
 import math
 from scipy.integrate import odeint
 import sys
-import ExoPlex.functions
+import seafreeze as sf
+import ExoPlex.functions as functions
 
 
 ToPa = 100000.
@@ -235,27 +236,25 @@ def get_water_rho(Pressure,Temperature):
         list of calculated density of water [kg/m^3]
 
     """
-    phase = []
-    P_water = []
-    T_water = []
-    P_ice = []
-    T_ice = []
-    density_ice = []
-
+    pressure_sf = []
+    temperature_sf = []
+    phase_sf = []
+    density_sf=[]
+    density_other =[]
+    PT = np.empty((len(Pressure),), np.object)
     for i in range(len(Pressure)):
-        if (functions.find_water_phase(Pressure[i],Temperature[i]) == 'Water'):
-            P_water.append(Pressure[i]*(1.e9/10000.)-((73.5e-5)*2.06e9*(Temperature[i]-373.)))
-            T_water.append(Temperature[i])
+        PT[i] = Pressure[i]*ToPa/1.e6, Temperature[i]
 
+    phase_num = sf.whichphase(PT)
+
+    for i in range(len(phase_num)):
+        if (phase_num[i] < 7):
+            pressure_sf.append(Pressure[i]*ToPa/1.e6)
+            temperature_sf.append(Temperature[i])
+            phase_sf.append(phase_num[i])
         else:
-            phase.append(functions.find_water_phase(Pressure[i],Temperature[i]))
-            P_ice.append(Pressure[i])
-            T_ice.append(Temperature[i])
+        #if (math.isnan(phase_num[i])== True or sf.whichphase(PT)[0] == 7.0):
 
-
-    for i in range(len(phase)):
-
-        if phase[i] == 'Ice_VII':
             class Ice_VII(burnman.Mineral):
 
                 def __init__(self):
@@ -270,49 +269,19 @@ def get_water_rho(Pressure,Temperature):
                     burnman.Mineral.__init__(self)
 
             rock = Ice_VII()
+            density_other.append(rock.evaluate(['density'], Pressure[i]*ToPa, Temperature[i])[0])
 
-            density_ice.append(rock.evaluate(['density'], 1.e9 * (P_ice[i] / 10000.), T_ice[i])[0])
 
-        if phase[i] == 'Ice_VI':
-            class Ice_VI(burnman.Mineral):
-                def __init__(self):
-                    self.params = {
-                        'name': 'ice_VI',
-                        'equation_of_state': 'bm2',
-                        'V_0': 14.17e-6,
-                        'K_0': 14.01e9,
-                        'Kprime_0': 4.,
-                        'molar_mass': 0.01801528,
-                    }
-                    burnman.Mineral.__init__(self)
+    PT = np.empty((len(pressure_sf),), np.object)
+    for i in range(len(pressure_sf)):
+        PT[i] = pressure_sf[i], temperature_sf[i]
 
-            rock = Ice_VI()
-            density_ice.append(rock.evaluate(['density'], 1.e9 * (P_ice[i] / 10000.), T_ice[i])[0])
+    phase_names = [sf.phasenum2phase[pn] for pn in phase_sf]
+    for i in range(len(phase_sf)):
+        new = sf.seafreeze(np.array(PT[i]), phase_names[i])
+        density_sf.append(new.rho[0][0])
 
-        if phase[i] == 'Ice_Ih':
-            class Ice_Ih(burnman.Mineral):
-
-                def __init__(self):
-                    self.params = {
-                        'name': 'Ice_Ih',
-                        'equation_of_state': 'bm3',
-                        'V_0': 1./(916.72/0.01801528),
-                        'K_0': 9.2e9,
-                        'Kprime_0': 5.5,
-                        'molar_mass': 0.01801528,
-                    }
-                    burnman.Mineral.__init__(self)
-
-            rock = Ice_Ih()
-            #print (No phase"uh oh")
-            density_ice.append(rock.evaluate(['density'], 1.e9 * (P_ice[i] / 10000.), T_ice[i])[0])
-
-    rock = burnman.minerals.other.water()
-    density_water = rock.evaluate(['density'],P_water,T_water)[0]
-
-    density = np.concatenate((density_ice,density_water),axis=0)
-    test = np.concatenate((density_ice,P_ice),axis=0)
-
+    density = np.concatenate((density_other,density_sf),axis=0)
     return density
 
 def get_water_Cp(Pressure, Temperature):
@@ -333,18 +302,39 @@ def get_water_Cp(Pressure, Temperature):
         Calculated specific heat [J/(kg*K)]
 
     """
-    phase = functions.find_water_phase(Pressure,Temperature)
-    Pressure = Pressure/10000.
-    if phase == 'Water':
-        return 4.184e3
 
-    if phase == 'Ice_VII' or phase=='Ice_VI':
-        cp = 3.3 + 22.1 * np.exp(-0.058 * Pressure)  # Asahara 2010
-        return 1000.*cp
+    pressure_sf = []
+    temperature_sf = []
+    phase_sf = []
+    cp_sf=[]
+    cp_other =[]
 
-    if phase == 'Ice_Ih':
-        return 4.184e3
+    PT = np.empty((len(Pressure),), np.object)
+    for i in range(len(Pressure)):
+        PT[i] = Pressure[i]*ToPa/1.e6, Temperature[i]
 
+    phase_num = sf.whichphase(PT)
+
+    for i in range(len(phase_num)):
+        if (phase_num[i] < 7):
+            pressure_sf.append(Pressure[i]*ToPa/1.e6)
+            temperature_sf.append(Temperature[i])
+            phase_sf.append(phase_num[i])
+        else:
+
+            cp_other.append(1000* 3.3 + 22.1 * np.exp(-0.058 * Pressure[i]*ToPa/1e9) ) # Asahara 2010
+
+    PT = np.empty((len(pressure_sf),), np.object)
+    for i in range(len(pressure_sf)):
+        PT[i] = pressure_sf[i], temperature_sf[i]
+
+    phase_names = [sf.phasenum2phase[pn] for pn in phase_sf]
+    for i in range(len(phase_sf)):
+        new = sf.seafreeze(np.array(PT[i]), phase_names[i])
+        cp_sf.append(new.Cp[0][0])
+
+    Cp = np.concatenate((cp_other, cp_sf), axis=0)
+    return Cp
 
 def get_water_alpha(Pressure,Temperature):
     """
@@ -364,24 +354,45 @@ def get_water_alpha(Pressure,Temperature):
         Calculated thermal expansivity [1/K]
 
     """
-    phase = functions.find_water_phase(Pressure, Temperature)
-    Pressure = Pressure / 10000.
-    if phase == 'Water':
-        return 214.e-6
 
-    if phase == 'Ice_VII' or phase=='Ice_VI':
-        Ks = 23.7
-        Ksp = 4.15
-        a0 = -3.9e-4
-        a1 = 1.5e-6
-        at = a0 + a1 * Temperature
-        alpha = at * (1 + (Ksp / Ks) * Pressure) ** (-0.9)  # fei 1993
-        return alpha
+    pressure_sf = []
+    temperature_sf = []
+    phase_sf = []
+    alpha_sf=[]
+    alpha_other =[]
 
-    if phase == 'Ice_Ih':
-        return 214.e-6
+    PT = np.empty((len(Pressure),), np.object)
+    for i in range(len(Pressure)):
+        PT[i] = Pressure[i]*ToPa/1.e6, Temperature[i]
 
-    return 0
+    phase_num = sf.whichphase(PT)
+
+    for i in range(len(phase_num)):
+        if (phase_num[i] < 7):
+            pressure_sf.append(Pressure[i]*ToPa/1.e6)
+            temperature_sf.append(Temperature[i])
+            phase_sf.append(phase_num[i])
+        else:
+            Ks = 23.7
+            Ksp = 4.15
+            a0 = -3.9e-4
+            a1 = 1.5e-6
+            at = a0 + a1 * Temperature[i]
+            alpha_other.append( at * (1 + (Ksp / Ks) * Pressure[i]) ** (-0.9))  # fei 1993)
+
+    PT = np.empty((len(pressure_sf),), np.object)
+    for i in range(len(pressure_sf)):
+        PT[i] = pressure_sf[i], temperature_sf[i]
+
+    phase_names = [sf.phasenum2phase[pn] for pn in phase_sf]
+    for i in range(len(phase_sf)):
+        new = sf.seafreeze(np.array(PT[i]), phase_names[i])
+        alpha_sf.append(new.alpha[0][0])
+    alpha = np.concatenate((alpha_other, alpha_sf), axis=0)
+    return alpha
+
+
+
 
 def get_core_rho(Pressure,Temperature,Core_wt_per):
     """
@@ -821,9 +832,9 @@ def get_temperature(Planet,grids,structural_parameters,layers):
             spec_heat_water = []
             alpha_water = []
 
-            for i in range(len(P_points_water)):
-                spec_heat_water.append(get_water_Cp(P_points_water[i],T_points_water[i]))
-                alpha_water.append(get_water_alpha(P_points_water[i],T_points_water[i]))
+            if len(P_points_water) > 0:
+                spec_heat_water = get_water_Cp(P_points_water,T_points_water)
+                alpha_water= get_water_alpha(P_points_water,T_points_water)
 
             for i in range(num_mantle_layers):
                 if pressure[i] >=1250000:

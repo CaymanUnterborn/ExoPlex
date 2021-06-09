@@ -179,10 +179,11 @@ def get_percents(*args):
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
+
 def make_mantle_grid(Mantle_filename,UMLM,use_grids):
     """
-   This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
-   by ExoPlex integrators
+    This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
+    by ExoPlex integrators
 
     Parameters
     ----------
