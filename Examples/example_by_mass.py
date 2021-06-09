@@ -37,16 +37,16 @@ if __name__ == "__main__":
 
 
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0.0
+    wt_frac_water = 0
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 0
+    number_h2o_layers = 00
 
     #Now we can mix various elements into the core or mantle
     wt_frac_Si_core = 0. #by mass <1
     wt_frac_O_core = 0. #by mass
     wt_frac_S_core = 0. #by mass
-    mol_frac_Fe_mantle =0.0#by mole
+    mol_frac_Fe_mantle =0.0 #by mole
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -63,9 +63,6 @@ if __name__ == "__main__":
     num_mantle_layers = 500
     num_core_layers = 600
 
-
-
-    number_of_runs = 1
     Output_radii = []
     Output_mass = []
 
@@ -119,7 +116,7 @@ if __name__ == "__main__":
     #Now let us plot
     import matplotlib.pyplot as plt
 
-    figure = plt.figure(figsize=(12, 10))
+    figure = plt.figure(figsize=(8, 6.5))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
     ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
@@ -156,4 +153,4 @@ if __name__ == "__main__":
     ax4.set_ylim(0., max(Planet['temperature']) + 100)
     ax4.minorticks_on()
 
-    plt.show()
+    #plt.show()

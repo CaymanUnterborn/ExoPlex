@@ -55,15 +55,10 @@ def run_perplex(*args):
     filename = args[3]
     UMLM = args[4]
 
-    if UMLM == True:
-        Pressure_range_mantle = structure_params[0]
-        Temperature_range_mantle = structure_params[1]
-        resolution = structure_params[2]
+    Pressure_range_mantle = structure_params[0]
+    Temperature_range_mantle = structure_params[1]
+    resolution = structure_params[2]
 
-    else:
-        Pressure_range_mantle = structure_params[3]
-        Temperature_range_mantle = structure_params[4]
-        resolution = structure_params[5]
 
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
