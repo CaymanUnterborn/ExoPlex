@@ -80,7 +80,7 @@ def initialize_by_radius(*args):
 
     for i in range(num_layers):
 
-        if i <num_core_layers-1:
+        if i <num_core_layers:
             radius_layers[i]=((float(i)/num_core_layers)*core_thickness_guess)
             Temperature_layers[i] = 0.
 

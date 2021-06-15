@@ -102,13 +102,13 @@ if __name__ == "__main__":
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
     #Planet.get('phases') = list of phases and their molar fractions
     print
-    print "Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses"
-    print "Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii"
-    print "Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1])
-    print "Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1])
-    print "CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]/10000), "GPa"
+    print ("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
+    print ("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
+    print ("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1]))
+    print ("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1]))
+    print ("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]/10000), "GPa")
 
-    print "number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21),
+    print ("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
     #If you'd like the full output, uncomment out these lines! 
     Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
     exo.functions.write(Planet,Output_filename)
