@@ -36,7 +36,7 @@ def volume_fourth_order(pressure, params):
     func = lambda x: birch_murnaghan_fourth(
         params['V_0'] / x, params) - pressure
     try:
-        sol = bracket(func, params['V_0'], 1.e-2 * params['V_0'])
+        sol = bracket(func, params['V_0'], 1.e-4 * params['V_0'])
     except:
         raise ValueError(
             'Cannot find a volume, perhaps you are outside of the range of validity for the equation of state?')

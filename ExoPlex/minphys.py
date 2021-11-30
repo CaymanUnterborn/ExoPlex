@@ -44,14 +44,13 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     if num_mantle_layers > 0:
         if num_core_layers > 0:
             for i in range(num_core_layers):
-                if i <= num_core_layers:
+                if i < num_core_layers:
                     rho_layers[i] = get_core_rho(Pressure_layers[i],Temperature_layers[i],Core_wt_per)
-
-            if number_h2o_layers >0:
-                P_points_water = Pressure_layers[(num_mantle_layers+num_core_layers):]
-                T_points_water = Temperature_layers[(num_mantle_layers+num_core_layers):]
+            if number_h2o_layers > 0:
+                P_points_water = Pressure_layers[(num_mantle_layers+num_core_layers-1):]
+                T_points_water = Temperature_layers[(num_mantle_layers+num_core_layers-1):]
                 water_rho = get_water_rho(P_points_water, T_points_water)
-                rho_layers[num_core_layers+num_mantle_layers:] = water_rho
+                rho_layers[num_core_layers+num_mantle_layers-1:] = water_rho
 
             P_points_UM = []
             T_points_UM = []
@@ -98,8 +97,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
                 for i in range(len(test)):
 
                     if np.isnan(test[i]) == True:
-                        print (to_switch_P[i] / 1e4, to_switch_T[i])
-
                         print ("UM Rho Outside of range! ")
                         sys.exit()
                     else:
@@ -121,7 +118,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
                                             grids[0]['density'], (to_switch_P, to_switch_T), method='linear')
                 for i in range(len(test)):
                     if np.isnan(test[i]) == True:
-                        print (to_switch_P[i]/10000, to_switch_T[i])
                         print ("LM Rho Outside of range!")
                         sys.exit()
                     else:
@@ -176,8 +172,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
                 for i in range(len(test)):
 
                     if np.isnan(test[i]) == True:
-                        print (to_switch_P[i] / 1e4, to_switch_T[i])
-
                         print ("UM Rho Outside of range!")
                         sys.exit()
                     else:
@@ -199,7 +193,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
                                             grids[0]['density'], (to_switch_P, to_switch_T), method='linear')
                 for i in range(len(test)):
                     if np.isnan(test[i]) == True:
-                        print (to_switch_P[i] / 10000, to_switch_T[i])
                         print ("LM Rho Outside of range!")
                         sys.exit()
                     else:
@@ -216,7 +209,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
         return rho_layers
     else:
         for i in range(num_core_layers):
-            if i <= num_core_layers:
+            if i < num_core_layers:
                 rho_layers[i] = get_core_rho(Pressure_layers[i],Temperature_layers[i],Core_wt_per)
         return rho_layers
 def get_water_rho(Pressure,Temperature):
@@ -241,17 +234,20 @@ def get_water_rho(Pressure,Temperature):
     phase_sf = []
     density_sf=[]
     density_other =[]
-    PT = np.empty((len(Pressure),), np.object)
+    PT = np.empty((len(Pressure),), dtype=object)
     for i in range(len(Pressure)):
         PT[i] = Pressure[i]*ToPa/1.e6, Temperature[i]
 
     phase_num = sf.whichphase(PT)
 
+
     for i in range(len(phase_num)):
         if (phase_num[i] < 7):
+
             pressure_sf.append(Pressure[i]*ToPa/1.e6)
             temperature_sf.append(Temperature[i])
             phase_sf.append(phase_num[i])
+
         else:
         #if (math.isnan(phase_num[i])== True or sf.whichphase(PT)[0] == 7.0):
 
@@ -277,11 +273,13 @@ def get_water_rho(Pressure,Temperature):
         PT[i] = pressure_sf[i], temperature_sf[i]
 
     phase_names = [sf.phasenum2phase[pn] for pn in phase_sf]
+
     for i in range(len(phase_sf)):
         new = sf.seafreeze(np.array(PT[i]), phase_names[i])
         density_sf.append(new.rho[0][0])
 
     density = np.concatenate((density_other,density_sf),axis=0)
+
     return density
 
 def get_water_Cp(Pressure, Temperature):
@@ -513,8 +511,8 @@ def get_gravity(Planet,layers):
 
             return gravity_layers
         else:
-            radii_mantle = radii[num_core_layers:(num_core_layers + num_mantle_layers)]
-            density_mantle = density[num_core_layers:(num_core_layers + num_mantle_layers)]
+            radii_mantle = radii[num_core_layers-1:(num_core_layers + num_mantle_layers)]
+            density_mantle = density[num_core_layers-1:(num_core_layers + num_mantle_layers)]
             rhofunc_mantle = interpolate.UnivariateSpline(radii_mantle, density_mantle)
             poisson_mantle = lambda p, x: 4.0 * np.pi * G * rhofunc_mantle(x) * x * x
             gravity_layers = np.ravel(odeint(poisson_mantle,0.,radii_mantle))
@@ -684,7 +682,7 @@ def get_mass(Planet,layers):
 
     if num_mantle_layers >0:
         if num_core_layers >0:
-            if len(radii)<=num_core_layers:
+            if len(radii)< num_core_layers:
 
                 rhofunc = interpolate.UnivariateSpline(radii, density)
                 mass_in_sphere = lambda p, x: 4.0 * np.pi * rhofunc(x) * x * x
@@ -766,11 +764,14 @@ def get_radius(Planet,layers):
     density = Planet['density']
     radius = np.zeros(len(mass))
 
+    val = 4. * np.pi / 3.
+    #Not getting radius for fiinal
+    radius[1] = pow(mass[1]/density[1]/val,1./3)
     for i in range(len(radius))[1:]:
-        Vol = (mass[i]-mass[i-1])/density[i]
-        val = 4.*np.pi/3.
-        radius[i] = pow((Vol/val)+pow(radius[i-1],3.),1./3.)
+        mass_lay = mass[i]-mass[i-1]
+        radius[i] = np.cbrt(mass_lay/density[i]/val +pow(radius[i-1],3.))
 
+    #print(radius[-1]/1000.)
     return radius
 
 def get_temperature(Planet,grids,structural_parameters,layers):
@@ -817,8 +818,8 @@ def get_temperature(Planet,grids,structural_parameters,layers):
             gravity = gravity[num_core_layers:]
 
             pressure = pressure[num_core_layers:]
-
             temperature = temperature[num_core_layers:]
+
             depths = radii[-1] - radii
 
             P_points_UM = []
@@ -846,6 +847,8 @@ def get_temperature(Planet,grids,structural_parameters,layers):
 
             depths_mantle = depths[:num_mantle_layers]
             gravity_mantle = gravity[:num_mantle_layers]
+
+
 
             depths_water = depths[num_mantle_layers:]
             gravity_water = gravity[num_mantle_layers:]
@@ -927,7 +930,6 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                 for i in range(len(test)):
 
                     if np.isnan(test[i]) == True:
-                        print (to_switch_P[i] / 1e5, to_switch_T[i])
                         print ("UM Alpha Outside of range!")
                         sys.exit()
                     else:
@@ -1126,6 +1128,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
             spec_heat_func = interpolate.UnivariateSpline(depths_mantle[::-1], spec_heat_mantle[::-1])
             alpha_func = interpolate.UnivariateSpline(depths_mantle[::-1], alpha_mantle[::-1])
 
+
             adiabat_mantle = lambda p, x: alpha_func(x) * grav_func(x) / spec_heat_func(x)
 
             gradient_mantle = np.ravel(odeint(adiabat_mantle, 0., depths_mantle[::-1]))
@@ -1193,8 +1196,7 @@ def check_convergence(new_rho,old_rho):
     new_rho = [i for i in new_rho]
 
     for i in range(len(delta)):
-
-        if delta[i] >= 1.e-6:
+        if abs(delta[i]) >= pow(10,-3):
             return False,new_rho
 
     return True, new_rho

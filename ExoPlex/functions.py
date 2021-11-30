@@ -5,7 +5,17 @@ from scipy import interpolate
 from ExoPlex import planet as planet
 from ExoPlex import minphys as minphys
 
-def get_percents(*args):
+ToPa = 100000.
+
+def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
+
+    mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((55.845 + 15.999) * FeMg)) * (
+                SiMg * 28.0855 + AlMg * 26.9815 + CaMg * 40.078 + 24.305 + 15.999 * (
+                    2 * SiMg + 1.5 * AlMg + CaMg + 1))) / (1 - wt_frac_FeO_wanted)
+
+    return mol_frac_Fe_mantle
+
+def get_percents(compositional_params,verbose):
 
     """
     This module calculates the bulk composition of the mantle given the elemental ratios provided in the input files
@@ -27,14 +37,14 @@ def get_percents(*args):
     core_mass_frac: float
         Mass of core divided by mass of planet
     """
-    FeMg = args[1]
-    SiMg = args[2]
-    CaMg = args[3]
-    AlMg = args[4]
-    mol_frac_Fe_mantle = args[5]
-    wt_frac_Si_core = args[6]
-    wt_frac_O_core = args[7]
-    wt_frac_S_core = args[8]
+    FeMg = compositional_params[1]
+    SiMg = compositional_params[2]
+    CaMg = compositional_params[3]
+    AlMg = compositional_params[4]
+    mol_frac_Fe_mantle = compositional_params[5]
+    wt_frac_Si_core = compositional_params[6]
+    wt_frac_O_core = compositional_params[7]
+    wt_frac_S_core = compositional_params[8]
 
     MgSi = 1./SiMg
     FeSi = FeMg*MgSi
@@ -52,7 +62,7 @@ def get_percents(*args):
 
 
     # system of equation which when solved gives molar values of elements in mantle and core
-    # x = [nFec,nSic,nOc, nSc | ,nFem,nMgm,nSim,nOm, nCam, nAlm]
+    # x = [1 nFec,2 nSic, 3 nOc, 4 nSc | ,5 nFem, 6 nMgm,7 nSim,8 nOm, 9 nCam, 10 nAlm]
 
     #Sum of all masses = 100 g
     b = np.array([0., 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
@@ -169,13 +179,14 @@ def get_percents(*args):
     Core_wt_per = {'Fe':Fe_core_wt,'Si':Si_core_wt,'O':O_core_wt,'S':S_core_wt}
     Core_mol_per ={'Fe':Core_moles[0]/tot_moles_core,'Si':Core_moles[1]/tot_moles_core,\
                   'O':Core_moles[2]/tot_moles_core,'S':Core_moles[3]/tot_moles_core}
-    print()
-    print("Core composition: ",Core_wt_per)
-    print("Mantle composition: ", Mantle_wt_per)
+    if verbose == True:
+        print()
+        print("Core composition: ",Core_wt_per)
+        print("Mantle composition: ", Mantle_wt_per)
 
-    print("Mantle Fe#", Mantle_moles[0]/(Mantle_moles[0]+Mantle_moles[1]))
-    print("Core Mass Percent = ", '%.3f'%(core_mass_frac*100.))
-    print()
+        print("Mantle Fe#", Mantle_moles[0]/(Mantle_moles[0]+Mantle_moles[1]))
+        print("Core Mass Percent = ", '%.3f'%(core_mass_frac*100.))
+        print()
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
@@ -210,6 +221,7 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         else:
             file = open(Mantle_filename+'_LM_results.txt','r')
 
+
         temp_file = file.readlines()
         num_rows = len(temp_file[1:])
         num_columns = len(temp_file[12].split(','))
@@ -227,7 +239,6 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
             Phases[i] = Phases[i].strip()
 
         #calculate number of rows getting rid of #'s
-
 
         data = temp_file[start:]
         grid = np.zeros((num_rows,num_columns))
@@ -316,7 +327,6 @@ def get_phases(Planet,grids,layers,combine_phases):
     new_names : list
         composition of mantle in oxides :math:`[wt\%]`
     """
-
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
 
 
@@ -356,7 +366,7 @@ def get_phases(Planet,grids,layers,combine_phases):
 
 
     if number_h2o_layers>0:
-        Phases = np.zeros((len(Planet['pressure']),len(Mantle_phases[0])+5))
+        Phases = np.zeros((len(Planet['pressure']),len(Mantle_phases[0])+8))
     else:
         Phases = np.zeros((len(Planet['pressure']),len(Mantle_phases[0])+1))
 
@@ -383,29 +393,36 @@ def get_phases(Planet,grids,layers,combine_phases):
         Phases[num_core_layers:(num_mantle_layers + num_core_layers), 0:len(Mantle_phases[0])] = Mantle_phases
 
     # add in the core:
+
     if number_h2o_layers > 0:
         for i in range(len(Phases)):
             if i < num_core_layers-1:
 
-                Phases[i][len(Mantle_phases[0]):] =[100, float('NaN'), float('NaN'), float('NaN'),float('NaN')]
+                Phases[i][len(Mantle_phases[0]):] =[100, float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
             elif i < (num_mantle_layers+num_core_layers):
 
-                 Phases[i][len(Mantle_phases[0]):] =[0,0,0,0,0]
+                 Phases[i][len(Mantle_phases[0]):] =[0,0,0,0,0,0,0,0]
             else:
-                water_phase = find_water_phase(Planet['pressure'][i],Planet['temperature'][i])
-                if water_phase == 'Water':
 
-                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), 100, float('NaN'), float('NaN'),float('NaN')]
-                elif water_phase == 'Ice_VII':
-                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), float('NaN'), 100, float('NaN'),float('NaN')]
-                elif water_phase == 'Ice_VI':
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), 100,float('NaN')]
+                water_phase = find_water_phase(Planet['pressure'][i],Planet['temperature'][i])
+                if water_phase == 'water1':
+                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), 100, float('NaN'), float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
+                elif water_phase == 'Ih':
+                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), float('NaN'), 100, float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
+                elif water_phase == 'II':
+                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), 100,float('NaN'),float('NaN'), float('NaN'),float('NaN')]
+                elif water_phase == 'III':
+                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'),  float('NaN'),100,float('NaN'), float('NaN'),float('NaN')]
+                elif water_phase == 'V':
+                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'), 100,float('NaN'), float('NaN')]
+                elif water_phase == 'VI':
+                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'), 100, float('NaN')]
                 else:
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),100]
+                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'),float('NaN'), 100]
 
     else:
         for i in range(len(Phases)):
-            if i < num_core_layers - 1:
+            if i < num_core_layers:
                 Phases[i][len(Mantle_phases[0]):] = 100.
             else:
                 # Phases[i] =np.resize(Phases[i],len(Phases[i])+4)
@@ -455,6 +472,23 @@ def get_phases(Planet,grids,layers,combine_phases):
         new_names = phase_names
     return Phases, new_names
 
+def find_water_phase(Pressure, Temperature):
+    import seafreeze as sf
+    Pressure = [Pressure]
+    Temperature = [Temperature]
+    PT = np.empty((len(Pressure),), dtype=object)
+    PT[0] = Pressure[0]*ToPa/1.e6,Temperature[0]
+    phase_num = sf.whichphase(PT)
+    #print(PT,phase_num)
+    #print(sf.phasenum2phase[phase_num[0]])
+    #print(np.isnan(phase_num[0]))
+    if ( np.isnan(phase_num[0]) == True):
+        #print('ice7')
+        return ('Ice_VII')
+    else:
+        return(sf.phasenum2phase[phase_num[0]])
+        # if (math.isnan(phase_num[i])== True or sf.whichphase(PT)[0] == 7.0):
+
 def write(Planet,filename):
     """
     This module creates the output file for reading later
@@ -490,7 +524,9 @@ def write(Planet,filename):
         line_name.append(str(i))
 
     string_element = '	'.join(line_name)
-    np.savetxt(filename+'.tsv', output, '%.5f', "\t", newline='\n',
+    filename = 'Data/'+filename
+
+    np.savetxt(filename+'.csv', output, '%.5f', "\t", newline='\n',
                 header=string_element, footer='', comments='# ')
 
     print()
@@ -498,191 +534,7 @@ def write(Planet,filename):
     print()
     return 0
 
-def find_water_phase(Pressure, Temperature):
-    """
-    This module determines the phase of water at a given pressure and temperature
-
-    Parameters
-    ----------
-    Pressure: float
-        Pressure :math:`[GPa]`
-    Temperature: float
-        Temperature :math:`[K]`
-
-    Returns
-    -------
-    phase: string
-        Phase of water present either water, ice VII, ice Ih, ice VI
-    """
-
-    def iceVI(Temperature,Pressure):
-        Theta = Temperature/273.31
-        P_test = 632.4e6 * (1.-1.07476*(1.-pow(Theta,4.6)))
-        if (Pressure*1e9) > P_test:
-            Theta_VII = Temperature/355.
-            P_test_VII = (1./1000.)*(2210.+534.2*((pow(Theta_VII,5.22)-1.)))
-
-            if Pressure > P_test_VII:
-                return 'Ice_VII'
-            else:
-                return 'Ice_VI'
-        else:
-            return 'Water'
-
-    def iceVII(Temperature,Pressure):
-        a = 1.73683
-        b = 0.0544606
-        c = 0.806106e-7
-        Theta = Temperature/355.
-        lnP = 2216.e6*np.exp(a*(1.-(1./Theta)) - b*(1.-pow(Theta,5.)) + c*(1.-pow(Theta,22.)))
-
-
-        if (1.e9*Pressure)>lnP:
-            return 'Ice_VII'
-
-        else:
-            return 'Water'
-
-    def iceVII_2(Temperature,Pressure):
-        Tin = Temperature-250.
-        Pm = 0.02186*Tin + 5.40841
-        Pm = np.exp(Pm)*1.e6
-
-        if (1.e9*Pressure) > Pm:
-            return 'Ice_VII'
-
-        else:
-            return 'Water'
-
-    def iceIH(Temperature,Pressure):
-        a1 = 0.119539337e7
-        a2 = 0.808183159e5
-        a3 = 0.333826860e4
-        b1 = 0.300000e1
-        b2 = 0.257500e2
-        b3 = 0.103750e3
-        O  = Temperature/273.16
-        pi = 1 + a1*(1.-O**b1) + a2*(1.-O**b2) + a3*(1.-O**b3)
-        Pm = pi* 611.657
-
-        if P > Pm:
-            return 'Ice_Ih'
-        else:
-            return 'Water'
-
-    def Ih_or_VII(Temperature,Pressure):
-        P1h = 176.0 + 0.918 * (Temperature - 198.5)
-
-        P1h = P1h * 1e6
-
-        if (1.e9*Pressure) > P1h:
-            return 'Ice_VII'
-        else:
-            return 'Ice_Ih'
-    Pressure = Pressure/10000. #convert to GPa
-
-    if Pressure > 20.3746:
-        # ice VII
-        phase = 'Ice_VII'
-
-    elif Temperature < 355. and Temperature > 273.31:
-        phase = iceVI(Temperature,Pressure)
-
-    elif Temperature <= 715 and Temperature >= 355:
-        # liquid or iceVII, run routine to check
-        phase = iceVII(Temperature, Pressure)
-
-    elif Pressure > 223.276 and Temperature < 355 and Temperature > 250:
-        # iceVII or liq??
-        # for bme3
-        phase = iceVII_2(Temperature, Pressure)
-
-    elif Pressure < 223.276 and Temperature < 355 and Temperature >= 273:
-        # liquid water
-        phase = 'Water'
-    elif Pressure < 223.276 and Temperature < 273 and Temperature > 251:
-        # liquid or iceIh, run routine to check
-        phase = iceIH(Temperature, Pressure)
-
-    elif Temperature <= 251 and Temperature > 0:
-        # ice ih or ice VII
-        phase = ih_or_vii(Pressure, Temperature)
-
-    else:
-        print("\n\n Outside Water phase diagram, need to change \n")
-        phase = iceVII(Temperature, Pressure)
-
-        print("T = %r\tP = %r GPa" % (Temperature, Pressure))
-
-
-
-    def iceVI(Temperature,Pressure):
-        Theta = Temperature/273.31
-        P_test = 632.4e6 * (1.-1.07476*(1.-pow(Theta,4.6)))
-        if (Pressure*1e9) > P_test:
-            Theta_VII = Temperature/355.
-            P_test_VII = (1./1000.)*(2210.+534.2*((pow(Theta_VII,5.22)-1.)))
-
-            if Pressure > P_test_VII:
-                return 'Ice_VII'
-            else:
-                return 'Ice_VI'
-        else:
-            return 'Water'
-
-    def iceVII(Temperature,Pressure):
-        a = 1.73683
-        b = 0.0544606
-        c = 0.806106e-7
-        Theta = Temperature/355.
-        lnP = 2216.e6*np.exp(a*(1.-(1./Theta)) - b*(1.-pow(Theta,5.)) + c*(1.-pow(Theta,22.)))
-
-
-        if (1.e9*Pressure)>lnP:
-            return 'Ice_VII'
-
-        else:
-            return 'Water'
-
-    def iceVII_2(Temperature,Pressure):
-        Tin = Temperature-250.
-        Pm = 0.02186*Tin + 5.40841
-        Pm = np.exp(Pm)*1.e6
-
-        if (1.e9*Pressure) > Pm:
-            return 'Ice_VII'
-
-        else:
-            return 'Water'
-
-    def iceIH(Temperature,Pressure):
-        a1 = 0.119539337e7
-        a2 = 0.808183159e5
-        a3 = 0.333826860e4
-        b1 = 0.300000e1
-        b2 = 0.257500e2
-        b3 = 0.103750e3
-        O  = Temperature/273.16
-        pi = 1 + a1*(1.-O**b1) + a2*(1.-O**b2) + a3*(1.-O**b3)
-        Pm = pi* 611.657
-
-        if P > Pm:
-            return 'Ice_Ih'
-        else:
-            return 'Water'
-
-    def Ih_or_VII(Temperature,Pressure):
-        P1h = 176.0 + 0.918 * (Temperature - 198.5)
-
-        P1h = P1h * 1e6
-
-        if (1.e9*Pressure) > P1h:
-            return 'Ice_VII'
-        else:
-            return 'Ice_Ih'
-
-    return phase
-def find_Planet_radius(radius_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers):
+def find_Planet_radius(radius_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers,verbose):
     """
     This module contains functions to determine the a planet's mass when given radius and composition. Because we conserve the mass ratios of the planet \
     we must iterate over core mass fraction to match the input composition.
@@ -719,16 +571,20 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         grids = args[4]
         Core_wt_per = args[5]
         CMF_to_fit = args[6]
-
+        verbose = args[7]
 
         structure_params[6] = value
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, layers])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers])
+
+        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
         planet_mass = minphys.get_mass(Planet,layers)
 
         CMF = planet_mass[num_core_layers]/planet_mass[-1]
-        print("Diff in Core Mass Fraction = ", '%.3e' % (CMF_to_fit - CMF))
+        if verbose == True:
+            print("Diff in Core Mass Fraction = ", '%.3e' % (CMF_to_fit - CMF))
+
+
         return (1.-(CMF_to_fit /CMF))
 
     def calc_CRF_WRF(values, *args):
@@ -742,7 +598,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         Core_wt_per = args[5]
         CMF_to_fit = args[6]
         WMF_to_fit = args[7]
-
+        verbose = args[8]
 
         structure_params[6] = values[0]
         structure_params[8] = values[1]
@@ -763,8 +619,9 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
             if values[1] > values[0]:
                 return (0,-15.)
 
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, layers])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers])
+
+        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
 
         planet_mass = minphys.get_mass(Planet,layers)
@@ -774,9 +631,9 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
 
         CMF = core_mass/terrestrial_mass
         WMF = water_mass/planet_mass[-1]
-
-        print("Diff in Core Mass percent = ", '%.3f' % (100.*CMF_to_fit - 100.*CMF))
-        print("Diff in Water Mass percent = ", '%.3f' % (100.*WMF_to_fit - 100.*WMF))
+        if verbose == True:
+            print("Diff in Core Mass percent = ", '%.3f' % (100.*CMF_to_fit - 100.*CMF))
+            print("Diff in Water Mass percent = ", '%.3f' % (100.*WMF_to_fit - 100.*WMF))
 
 
         return (100.*CMF_to_fit - 100.*CMF,100.*WMF_to_fit - 100.*WMF)
@@ -786,26 +643,28 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         from scipy.optimize import root
 
         water_mass_frac = compositional_params[0]
-        args = (radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac,water_mass_frac)
-        solution = root(calc_CRF_WRF, [.3,water_mass_frac],args=args,tol=1.e-4,method='anderson')
+        args = (radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac,water_mass_frac,verbose)
+        solution = root(calc_CRF_WRF, [.3,water_mass_frac],args=args,tol=1.e-3,method='anderson')
         structure_params[6], structure_params[8] = solution.x
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, layers])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params,Core_wt_per, layers])
+        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
         return Planet
 
     else:
         from scipy.optimize import brentq
-        args = [radius_planet, structure_params, compositional_params, layers,grids,Core_wt_per,core_mass_frac]
+        args = [radius_planet, structure_params, compositional_params, layers,grids,Core_wt_per,core_mass_frac,verbose]
+        structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.2,pow(core_mass_frac,0.5)+.2,args=args,xtol=1e-3)
 
-        structure_params[6] = brentq(calc_CRF,0.25,0.65,args=args,xtol=1e-4)
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, layers])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers])
+            #structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.3,.95,args=args,xtol=1e-3)
+
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per,layers])
+        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
 
         return Planet
 
-def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers):
+def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers,verbose):
     """
     This module contains functions to determine the a planet's radius when given mass and composition.
 
@@ -832,14 +691,16 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
 
     """
-    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
-    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers])
+
+    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac,Core_wt_per])
+
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
 
     return Planet
 
 
-def find_filename(compositional_params):
+def find_filename(compositional_params,verbose):
     """
     This module determines the closest compositional grid to pull from for a given composition
 
@@ -847,6 +708,8 @@ def find_filename(compositional_params):
     ----------
     compositional_params: list
         Structural parameters of the planet; See example for description
+    verbose: bool
+
 
     Returns
     -------
@@ -861,19 +724,21 @@ def find_filename(compositional_params):
     mCa      = 40.078
     mAl      = 26.981
 
-    mantle_wt_percents = get_percents(*compositional_params)[1]
+    mantle_wt_percents = get_percents(compositional_params,verbose)[1]
 
     mol_Mg = mantle_wt_percents.get('MgO')/(mMg + mO)
-    FeMg = (mantle_wt_percents.get('FeO')/(mFe+mO))/mol_Mg
-    SiMg = round((mantle_wt_percents.get('SiO2')/(mSi+2*mO))/mol_Mg,2)
-    CaMg = (mantle_wt_percents.get('CaO')/(mCa+mO))/mol_Mg
-    AlMg = (2.*mantle_wt_percents.get('Al2O3')/(2*mAl+3*mO))/mol_Mg
+    FeMg = round((mantle_wt_percents.get('FeO')/(mFe+mO))/mol_Mg,4)
+    SiMg = round((mantle_wt_percents.get('SiO2')/(mSi+2*mO))/mol_Mg,4)
+    CaMg = round((mantle_wt_percents.get('CaO')/(mCa+mO))/mol_Mg,4)
+    AlMg =round((2.*mantle_wt_percents.get('Al2O3')/(2.*mAl+3.*mO))/mol_Mg,4)
     FeO = mantle_wt_percents.get('FeO')/100.
 
     range_SiMg = np.array([0.5 + .1*x for x in range(16)])
     range_CaMg = np.array([0.02 + 0.01*x for x in range(8)])
+
     range_AlMg = np.array([0.04 + 0.01*x for x in range(8)])
     range_FeO = np.array([0.,.02,.04,.06,.08,.1,.15,.20])
+
 
     assert SiMg <= max(range_SiMg) ,"Si/Mg is too high and outside of range of grids. max = "+ str(max(range_SiMg))+ " your value = "+ str(SiMg)
     assert  SiMg >= min(range_SiMg),"Si/Mg is outside of range of grids"
@@ -897,7 +762,10 @@ def find_filename(compositional_params):
 
     filename = str(CaMg_file)+"CaMg_"+str(FeMg_file)+"FeMg_"+str(AlMg_file)+"AlMg_"+str(SiMg_file)+"SiMg_"+str(NaMg_file)+"NaMg_"+FeO_file+"Fe"
 
-    print("Your closest grid filename is: ", filename+"_U/LM_results.txt")
-    print()
+    if verbose ==True:
+        print("Your closest grid filename is: ", filename+"_U/LM_results.txt")
+        print()
+
+
 
     return filename

@@ -15,17 +15,17 @@ Temperature_range_mantle_UM = '1400 3000'
 Pressure_range_mantle_LM = '1000000 7500000'
 Temperature_range_mantle_LM = '2200 5000'
 
-core_rad_frac_guess = 1.
-water_rad_frac_guess = 0.1
-water_potential_temp = 300.
+core_rad_frac_guess = 0.5
+water_rad_frac_guess = 0.
 
 combine_phases = True
 use_grids = True
+verbose = True
 import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Mass_planet = 1 # in Earth masses
+    Mass_planet = 1. # in Earth masses
     #create filename to store values
 
     Output_filename = 'Filename'
@@ -37,16 +37,21 @@ if __name__ == "__main__":
 
 
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0
+    wt_frac_water = 0.0
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 00
+    number_h2o_layers = 0
+
+    #The potential Temperature of Water, if present
+    water_potential_temp = 300.
 
     #Now we can mix various elements into the core or mantle
-    wt_frac_Si_core = 0. #by mass <1
-    wt_frac_O_core = 0. #by mass
-    wt_frac_S_core = 0. #by mass
-    mol_frac_Fe_mantle =0.0 #by mole
+    wt_frac_Si_core = 0.0 #by mass <1
+    wt_frac_O_core = 0.0 #by mass
+    wt_frac_S_core = 0.0 #by mass
+
+    #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
+    wt_frac_FeO_wanted = 0.0 #by mass
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -70,11 +75,12 @@ if __name__ == "__main__":
     ######### Initalize and run ExoPlex
 
 
-    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,mol_frac_Fe_mantle,wt_frac_Si_core, \
+
+    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,exo.functions.get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg),wt_frac_Si_core, \
                           wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids]
 
     if use_grids == True:
-        filename = exo.functions.find_filename(compositional_params)
+        filename = exo.functions.find_filename(compositional_params,verbose)
     else:
         filename=''
 
@@ -89,7 +95,7 @@ if __name__ == "__main__":
     #Cp and alpha are calculated and stored in the Solutions folder. If the file already exists
     #(in name, not necessarily in composition), then PerPlex is not run again.
 
-    Planet = exo.run_planet_mass(Mass_planet,compositional_params,structure_params,layers,filename)
+    Planet = exo.run_planet_mass(Mass_planet,compositional_params,structure_params,layers,filename, verbose)
 
     #Planet is a dictionary containing many parameters of interest:
     #Planet.get('radius') = list of the radial points from calculation (m)
@@ -104,14 +110,14 @@ if __name__ == "__main__":
     print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
     print("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
-    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1]))
-    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1]))
-    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]/10000), "GPa")
+    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
+    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
+    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers-1]/10000), "GPa")
 
     print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
     #If you'd like the full output, uncomment out these lines!
     Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
-    exo.functions.write(Planet,Output_filename)
+    #exo.functions.write(Planet,Output_filename)
 
     #Now let us plot
     import matplotlib.pyplot as plt
@@ -153,4 +159,4 @@ if __name__ == "__main__":
     ax4.set_ylim(0., max(Planet['temperature']) + 100)
     ax4.minorticks_on()
 
-    #plt.show()
+    plt.show()

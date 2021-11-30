@@ -17,16 +17,16 @@ Temperature_range_mantle_LM = '2000 5000'
 
 core_rad_frac_guess = 0.5
 water_rad_frac_guess = 0.
-water_potential_temp = 300.
 
-combine_phases = True
+combine_phases = False
 use_grids = True
+verbose = True
 
 import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Radius_planet =1.
+    Radius_planet = 1.0
     #Need to give the run a name. This will be used as the name of the output files
     Output_filename = 'Filename'
 
@@ -43,11 +43,16 @@ if __name__ == "__main__":
     #Don't forget that if you have water you need to add water layers
     number_h2o_layers = 0
 
-    #Now we can mix various elements into the core or mantle
-    wt_frac_Si_core = 0. #by mass <1
-    wt_frac_O_core = 0. #by mass
-    wt_frac_S_core = 0. #by mass
-    mol_frac_Fe_mantle =0. #by mole
+    # The potential Temperature of Water, if present
+    water_potential_temp = 300.
+
+    # Now we can mix various elements into the core or mantle
+    wt_frac_Si_core = 0.0  # by mass <1
+    wt_frac_O_core = 0.0  # by mass
+    wt_frac_S_core = 0.0  # by mass
+
+    # What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
+    wt_frac_FeO_wanted = 0.0 #by mass
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -61,19 +66,16 @@ if __name__ == "__main__":
 
     #lastly we need to decide how many layers to put in the planet. This is the resolution of
     #the mass-radius sampling.
-    num_mantle_layers = 300
-    num_core_layers = 400
+    num_mantle_layers = 500
+    num_core_layers = 600
 
 
 
-    ######### Initalize and run ExoPlex
-
-
-    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,mol_frac_Fe_mantle,wt_frac_Si_core, \
-                          wt_frac_O_core,wt_frac_S_core,combine_phases, use_grids]
+    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,exo.functions.get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg),wt_frac_Si_core, \
+                          wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids]
 
     if use_grids == True:
-        filename = exo.functions.find_filename(compositional_params)
+        filename = exo.functions.find_filename(compositional_params,verbose)
     else:
         filename=''
     structure_params =  [Pressure_range_mantle_UM,Temperature_range_mantle_UM,resolution_UM,
@@ -89,7 +91,7 @@ if __name__ == "__main__":
 
 
 
-    Planet = exo.run_planet_radius(Radius_planet,compositional_params,structure_params,layers,filename)
+    Planet = exo.run_planet_radius(Radius_planet,compositional_params,structure_params,layers,filename,verbose)
 
     #Planet is a dictionary containing many parameters of interest:
     #Planet.get('radius') = list of the radial points from calculation (m)
@@ -101,12 +103,12 @@ if __name__ == "__main__":
     #Planet.get('alpha') = list of values of thermal expansivity points from calculation (1/K)
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
     #Planet.get('phases') = list of phases and their molar fractions
-    print
+
     print ("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
     print ("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
-    print ("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1]))
-    print ("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1]))
-    print ("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]/10000), "GPa")
+    print ("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
+    print ("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
+    print ("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers-1]/10000), "GPa")
 
     print ("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
     #If you'd like the full output, uncomment out these lines! 
@@ -153,5 +155,4 @@ if __name__ == "__main__":
     ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
     ax4.set_ylim(0., max(Planet['temperature']) + 100)
     ax4.minorticks_on()
-
     plt.show()
