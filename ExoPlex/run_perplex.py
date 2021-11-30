@@ -53,7 +53,9 @@ def run_perplex(*args):
     use_grids = compositional_params[10]
 
     filename = args[3]
-    UMLM = args[4]
+    verbose = args[4]
+    UMLM = args[5]
+
 
     Pressure_range_mantle = structure_params[0]
     Temperature_range_mantle = structure_params[1]
@@ -82,30 +84,34 @@ def run_perplex(*args):
 
 
     if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
-        print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
+        if verbose == True:
+            print ('The Upper mantle .tab already exists\n')
         return '../Solutions_Small/' + filename
 
     if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
-        print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
+        if verbose == True:
+            print ('The Lower mantle .tab already exists\n')
         return '../Solutions_Small/' + filename
 
     else:
         if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
             filename = solutionFileNameMan
-            print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
+            if verbose == True:
+                print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
             return '../Calc_Solutions/' + filename
 
         if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_LM_results.txt') == True and UMLM == False:
             filename = solutionFileNameMan
-
-            print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
+            if verbose == True:
+                print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
             return '../Calc_Solutions/' + filename
         else:
             if  UMLM == True:
-                print ('Making upper mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_UM_results.txt')
+                if verbose == True:
+                    print ('Making upper mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_UM_results.txt')
             else:
-
-                print ('Making lower mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_LM_results.txt')
+                if verbose == True:
+                    print ('Making lower mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_LM_results.txt')
 
     component1 = 'MGO'
     component2 = 'SIO2'
@@ -197,8 +203,8 @@ def run_perplex(*args):
     p.logfile = open('build.log','wb')
     p.read()
     p.wait()
-
-    print ("Done with Build, moving on to Vertex")
+    if verbose == True:
+        print ("Done with Build, moving on to Vertex")
 
     # Spawn Vertex ----------------#
     # Enter the project name (the name assigned in BUILD) [default = my_project]:
@@ -211,7 +217,8 @@ def run_perplex(*args):
     p.read()
     p.wait()
 
-    print ('Finished with Vertex, beginning Werami')
+    if verbose == True:
+        print ('Finished with Vertex, beginning Werami')
 
     p = pe.spawn(PerPlex_path+"/./werami",timeout=None)
 
@@ -293,7 +300,8 @@ def run_perplex(*args):
     p.sendline('0')
     p.read()
     p.terminate()
-    print ("Done with PerPlex")
+    if verbose == True:
+        print ("Done with PerPlex")
 
     if UMLM == True:
         os.rename(solutionFileNameMan+'_1.tab','../Calc_Solutions/'+filename+'_UM_results.txt')

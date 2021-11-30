@@ -8,6 +8,7 @@
 *.xml
 *.iml
 *.tsv
+*.csv
 Examples/TRAPPIST-1b_baseline.txt
 *.log
 # User-specific stuff
@@ -73,3 +74,5 @@ fabric.properties
 
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
+.DS_Store
+.idea/.name
