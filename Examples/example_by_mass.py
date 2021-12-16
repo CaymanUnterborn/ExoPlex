@@ -7,6 +7,8 @@ import os
 import sys
 
 # hack to allow scripts to be placed in subdirectories next to exoplex:
+import numpy as np
+
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
 Pressure_range_mantle_UM = '1000 1400000'
@@ -25,7 +27,7 @@ import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Mass_planet = 1. # in Earth masses
+    Mass_planet =1  # in Earth masses
     #create filename to store values
 
     Output_filename = 'Filename'
@@ -37,7 +39,7 @@ if __name__ == "__main__":
 
 
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0.0
+    wt_frac_water = 0
 
     #Don't forget that if you have water you need to add water layers
     number_h2o_layers = 0
@@ -110,18 +112,23 @@ if __name__ == "__main__":
     print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
     print("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
+    print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
     print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
     print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
     print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers-1]/10000), "GPa")
 
     print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
+    print("central core temp",'%.2f' % (Planet['temperature'][0]))
     #If you'd like the full output, uncomment out these lines!
     Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
-    #exo.functions.write(Planet,Output_filename)
+    exo.functions.write(Planet,Output_filename)
 
     #Now let us plot
     import matplotlib.pyplot as plt
 
+    plt.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
+    plt.show()
+    sys.exit()
     figure = plt.figure(figsize=(8, 6.5))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
@@ -156,7 +163,7 @@ if __name__ == "__main__":
     ax4.set_ylabel("Temperature ($K$)")
     ax4.set_xlabel("Radius (km)")
     ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
-    ax4.set_ylim(0., max(Planet['temperature']) + 100)
+    ax4.set_ylim(0., max(Planet['temperature']) + 300)
     ax4.minorticks_on()
 
     plt.show()

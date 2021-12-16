@@ -63,21 +63,26 @@ def get_percents(compositional_params,verbose):
 
     # system of equation which when solved gives molar values of elements in mantle and core
     # x = [1 nFec,2 nSic, 3 nOc, 4 nSc | ,5 nFem, 6 nMgm,7 nSim,8 nOm, 9 nCam, 10 nAlm]
-
     #Sum of all masses = 100 g
     b = np.array([0., 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
 
-
+    print()
     if wt_frac_Si_core >0:
-        mol_si_core = FeSi/(((-1.+1./wt_frac_Si_core)*(mSi/mFe))+2.)
+        Mass_plan = FeMg*mFe + SiMg*mSi + AlMg*mAl + CaMg*mCa + mMg + (1.+(2*SiMg)+(1.5*AlMg)+CaMg )*mO
+        WTO = AlMg*mAl + CaMg*mCa + mMg +(1.+(2*SiMg)+(1.5*AlMg)+CaMg )*mO
 
+        m_core = (Mass_plan -WTO - SiMg*mSi)/(1.+(wt_frac_Si_core*(2.*(mFe/mSi)-1.)))
+        mol_si_core = m_core*(wt_frac_Si_core/mSi)
         mole_Fe_mant = 2.*mol_si_core
-        mole_Si_mant = (1.-mol_si_core)
 
-        mole_O_mant = mole_Fe_mant + MgSi + CaSi + 2.*mole_Si_mant +1.5*AlSi
+        print("plan",Mass_plan)
+        print("core",m_core)
+        print("CMF",m_core/Mass_plan)
+        print("Si Core",mol_si_core)
+        print("Fe mant",mole_Fe_mant)
 
-        mol_frac_Fe_mantle = mole_Fe_mant/(FeSi)
-
+        print("moles of all Fe in mantle",mole_Fe_mant/FeMg)
+        mol_frac_Fe_mantle = mole_Fe_mant/FeMg
 
 
 ############################################################################################
@@ -190,6 +195,72 @@ def get_percents(compositional_params,verbose):
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
+def make_core_grid(Core_wt_per):
+
+    file = open('../Solutions_Small/liquid_iron_grid.csv')
+    temp_file = file.readlines()
+    num_rows = len(temp_file[1:])
+    num_columns = len(temp_file[12].split(','))
+
+    for i in temp_file[1:]:
+        if i[0] == '#':
+            num_rows = num_rows-1
+            start+=1
+
+    header = temp_file[0].strip('\n').split(',')
+    start = 1
+
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns))
+
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns]
+
+
+    pressure_grid = np.array([row[0] for row in grid])
+    temperature_grid = np.array([row[1] for row in grid])
+    density_grid = np.array([row[2] for row in grid])
+    alpha_grid = [pow(10,row[3]) for row in grid]
+
+    cp_grid = [row[4] for row in grid]
+
+    keys = ['temperature','pressure','density','alpha','cp']
+    return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid]))
+
+def make_water_grid():
+
+    file = open('../Solutions_Small/water_grid.csv')
+    temp_file = file.readlines()
+    num_rows = len(temp_file[1:])
+    num_columns = len(temp_file[12].split(','))
+
+    for i in temp_file[1:]:
+        if i[0] == '#':
+            num_rows = num_rows-1
+            start+=1
+
+    header = temp_file[0].strip('\n').split(',')
+    start = 1
+
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns-1))
+    phase_grid = []
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns[:-1]]
+        phase_grid.append(columns[-1])
+
+    pressure_grid = np.array([row[0] for row in grid])
+    temperature_grid = np.array([row[1] for row in grid])
+    density_grid = np.array([row[2] for row in grid])
+    alpha_grid = [pow(10.,row[4]) for row in grid]
+    cp_grid = [row[3] for row in grid]
+
+    keys = ['temperature','pressure','density','alpha','cp','phases']
+    return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid,phase_grid]))
 
 def make_mantle_grid(Mantle_filename,UMLM,use_grids):
     """
@@ -214,7 +285,6 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         Keys include: 'temperature','pressure','density','alpha','cp','phases'
 
     """
-
     if use_grids==True:
         if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')
@@ -395,6 +465,15 @@ def get_phases(Planet,grids,layers,combine_phases):
     # add in the core:
 
     if number_h2o_layers > 0:
+        P_wat=[]
+        T_wat = []
+        for i in range(len(Phases)):
+            if i >= (num_mantle_layers + num_core_layers):
+                P_wat.append(Planet['pressure'][i])
+                T_wat.append(Planet['temperature'][i])
+
+        phase_water = find_water_phase(P_wat,T_wat,grids)
+
         for i in range(len(Phases)):
             if i < num_core_layers-1:
 
@@ -403,8 +482,7 @@ def get_phases(Planet,grids,layers,combine_phases):
 
                  Phases[i][len(Mantle_phases[0]):] =[0,0,0,0,0,0,0,0]
             else:
-
-                water_phase = find_water_phase(Planet['pressure'][i],Planet['temperature'][i])
+                water_phase = phase_water[i-num_core_layers-num_mantle_layers]
                 if water_phase == 'water1':
                     Phases[i][len(Mantle_phases[0]):] =[float('NaN'), 100, float('NaN'), float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
                 elif water_phase == 'Ih':
@@ -472,22 +550,12 @@ def get_phases(Planet,grids,layers,combine_phases):
         new_names = phase_names
     return Phases, new_names
 
-def find_water_phase(Pressure, Temperature):
-    import seafreeze as sf
-    Pressure = [Pressure]
-    Temperature = [Temperature]
-    PT = np.empty((len(Pressure),), dtype=object)
-    PT[0] = Pressure[0]*ToPa/1.e6,Temperature[0]
-    phase_num = sf.whichphase(PT)
-    #print(PT,phase_num)
-    #print(sf.phasenum2phase[phase_num[0]])
-    #print(np.isnan(phase_num[0]))
-    if ( np.isnan(phase_num[0]) == True):
-        #print('ice7')
-        return ('Ice_VII')
-    else:
-        return(sf.phasenum2phase[phase_num[0]])
-        # if (math.isnan(phase_num[i])== True or sf.whichphase(PT)[0] == 7.0):
+def find_water_phase(Pressure, Temperature,grids):
+
+    Water_phases = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['phases'],
+    (Pressure, Temperature), method = 'nearest')
+
+    return Water_phases
 
 def write(Planet,filename):
     """
@@ -523,10 +591,10 @@ def write(Planet,filename):
     for i in Planet['phase_names']:
         line_name.append(str(i))
 
-    string_element = '	'.join(line_name)
+    string_element = ','.join(line_name)
     filename = 'Data/'+filename
 
-    np.savetxt(filename+'.csv', output, '%.5f', "\t", newline='\n',
+    np.savetxt(filename+'.csv', output, '%.5f', ",", newline='\n',
                 header=string_element, footer='', comments='# ')
 
     print()
@@ -574,7 +642,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         verbose = args[7]
 
         structure_params[6] = value
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers,grids])
 
         Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
@@ -619,7 +687,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
             if values[1] > values[0]:
                 return (0,-15.)
 
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers,grids])
 
         Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
@@ -646,7 +714,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         args = (radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac,water_mass_frac,verbose)
         solution = root(calc_CRF_WRF, [.3,water_mass_frac],args=args,tol=1.e-3,method='anderson')
         structure_params[6], structure_params[8] = solution.x
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params,Core_wt_per, layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params,Core_wt_per, layers,grids])
         Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
         return Planet
@@ -654,11 +722,11 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     else:
         from scipy.optimize import brentq
         args = [radius_planet, structure_params, compositional_params, layers,grids,Core_wt_per,core_mass_frac,verbose]
-        structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.2,pow(core_mass_frac,0.5)+.2,args=args,xtol=1e-3)
+        structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.2,pow(core_mass_frac,0.5)+.1,args=args,xtol=1e-3)
 
             #structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.3,.95,args=args,xtol=1e-3)
 
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per,layers])
+        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per,layers,grids])
         Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
 
@@ -692,7 +760,7 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
 
     """
 
-    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac,Core_wt_per])
+    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac,grids])
 
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
