@@ -126,9 +126,6 @@ if __name__ == "__main__":
     #Now let us plot
     import matplotlib.pyplot as plt
 
-    plt.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
-    plt.show()
-    sys.exit()
     figure = plt.figure(figsize=(8, 6.5))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)

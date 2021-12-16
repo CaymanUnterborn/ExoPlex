@@ -156,7 +156,7 @@ def initialize_by_radius(*args):
 
         elif i <= (num_core_layers + num_mantle_layers):
             radius_layers[i] = core_thickness_guess+ ((((i - num_core_layers) / num_mantle_layers) * mantle_thickness_guess))
-            density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, Temperature_layers[i]))
+            density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, 300))
             mass_layers[i] = density_layers[i] * (4 * np.pi / 3.) * (
                         pow(radius_layers[i], 3) - pow(radius_layers[i - 1], 3))
 
@@ -233,7 +233,8 @@ def initialize_by_mass(*args):
     water_potential_temp = structural_params[9]
 
     Radius_planet_guess = pow(mass_planet*5.97e24 / 5500. / (4*np.pi/3.),1/3.)/6371e3
-
+    if Radius_planet_guess > 2:
+        Radius_planet_guess = 2.
 
     if number_h2o_layers > 0:
         water_thickness_guess = water_rad_frac*Radius_planet_guess*6371e3
@@ -298,7 +299,8 @@ def initialize_by_mass(*args):
                 Temperature_layers[i] = Mantle_potential_temp+dT_dr*(i-number_h2o_layers)
 
             else:
-                Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1]  + 3.5*(dP_dr*num_mantle_layers/num_core_layers)*(i-number_h2o_layers-num_mantle_layers)
+                Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*5000
+                #Pressure_layers[number_h2o_layers+num_mantle_layers-1]  + 3.5*(dP_dr*num_mantle_layers/num_core_layers)*(i-number_h2o_layers-num_mantle_layers)
                 Temperature_layers[i] = 1900+i
 
 
@@ -321,7 +323,7 @@ def initialize_by_mass(*args):
 
         elif i <= (num_core_layers + num_mantle_layers):
 
-            density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, Temperature_layers[i]))
+            density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, 300.))
 
             mass_layers[i] = mantle_mass/num_mantle_layers
 
@@ -505,11 +507,13 @@ def compress_mass(*args):
         for i in range(len(Planet['density'])):
             if np.isnan(Planet['density'][i]) == True:
                 print ("Density has a nan at P (GPa), T (K):")
-                print (Planet['pressure'][i]*0.0001,Planet['temperature'][i])
+                print (i,Planet['pressure'][i]*0.0001,Planet['temperature'][i])
                 print
                 sys.exit()
 
-
+        #import matplotlib.pyplot as plt
+        #plt.plot(Planet['radius']/1000,Planet['pressure']/10/1000)
+        #plt.show()
         Planet['density'] = minphys.get_rho(Planet,grids,Core_wt_per,layers)
 
         Planet['radius'] = minphys.get_radius(Planet, layers)
