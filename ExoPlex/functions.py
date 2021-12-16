@@ -197,7 +197,7 @@ def get_percents(compositional_params,verbose):
 
 def make_core_grid(Core_wt_per):
 
-    file = open('../Solutions_Small/liquid_iron_grid.csv')
+    file = open('../Solutions_Small/liquid_iron_grid.dat')
     temp_file = file.readlines()
     num_rows = len(temp_file[1:])
     num_columns = len(temp_file[12].split(','))
@@ -231,7 +231,7 @@ def make_core_grid(Core_wt_per):
 
 def make_water_grid():
 
-    file = open('../Solutions_Small/water_grid.csv')
+    file = open('../Solutions_Small/water_grid.dat')
     temp_file = file.readlines()
     num_rows = len(temp_file[1:])
     num_columns = len(temp_file[12].split(','))

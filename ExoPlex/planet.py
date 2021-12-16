@@ -140,6 +140,7 @@ def initialize_by_radius(*args):
     T_core = Temperature_layers[:num_core_layers]
     rho_core = interpolate.griddata((core_grid['pressure'], core_grid['temperature']),
                                             core_grid['density'], (P_core, T_core), method='linear')
+
     for i in range(num_layers):
         if i < num_core_layers:
             if i == 0:
@@ -156,7 +157,6 @@ def initialize_by_radius(*args):
         elif i <= (num_core_layers + num_mantle_layers):
             radius_layers[i] = core_thickness_guess+ ((((i - num_core_layers) / num_mantle_layers) * mantle_thickness_guess))
             density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, Temperature_layers[i]))
-
             mass_layers[i] = density_layers[i] * (4 * np.pi / 3.) * (
                         pow(radius_layers[i], 3) - pow(radius_layers[i - 1], 3))
 
@@ -404,7 +404,7 @@ def compress_radius(*args):
 
             if np.isnan(Planet['density'][i]) == True:
                 print ("Density has a nan")
-                print (i, Planet['pressure'][i],Planet['temperature'][i])
+                print (i, Planet['pressure'][i]/10/1000,Planet['temperature'][i])
                 print
 
                 sys.exit()
@@ -423,7 +423,7 @@ def compress_radius(*args):
 
             for i in range(len(Planet['temperature'])):
 
-                if Planet['temperature'][i] >= 6900:
+                if Planet['temperature'][i] >= 6900 and i >layers[1]:
                     import matplotlib.pyplot as plt
                     print(i)
                     #plt.plot(Planet['radius'], Planet['temperature'])
@@ -504,8 +504,8 @@ def compress_mass(*args):
 
         for i in range(len(Planet['density'])):
             if np.isnan(Planet['density'][i]) == True:
-                print ("Density has a nan")
-                print (i, Planet['pressure'][i]*0.0001,Planet['temperature'][i])
+                print ("Density has a nan at P (GPa), T (K):")
+                print (Planet['pressure'][i]*0.0001,Planet['temperature'][i])
                 print
                 sys.exit()
 
