@@ -6,7 +6,7 @@ import os
 import sys
 import ExoPlex.minphys as minphys
 import ExoPlex.functions as functions
-# hack to allow scripts to be placed in subdirectories next to burnman:
+# hack to allow scripts to be placed in subdirectories next to ExoPlex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
 
@@ -60,11 +60,14 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
         names.append('ice_V')
         names.append('ice_VI')
         names.append('ice_VII')
-
+        water_grid = functions.make_water_grid()
+    else:
+        water_grid = []
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,[structure_params[3],structure_params[4],structure_params[5]],filename,verbose,False])
     grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+    core_grid = functions.make_core_grid(Core_wt_per)
 
-    grids = [grids_low,grids_high]
+    grids = [grids_low,grids_high,core_grid,water_grid]
     Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
 
     Planet['mass'] = minphys.get_mass(Planet,layers)
@@ -117,12 +120,16 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
         names.append('ice_V')
         names.append('ice_VI')
         names.append('ice_VII')
-
+        water_grid = functions.make_water_grid()
+    else:
+        water_grid = []
 
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,[structure_params[3],structure_params[4],structure_params[5]],filename,verbose,False])
     grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
 
-    grids = [grids_low,grids_high]
+    core_grid = functions.make_core_grid(Core_wt_per)
+    grids = [grids_low,grids_high,core_grid,water_grid]
+
     Planet = functions.find_Planet_mass(mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
     Planet['phase_names'] = names
 

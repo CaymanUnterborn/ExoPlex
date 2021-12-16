@@ -38,10 +38,10 @@ if __name__ == "__main__":
     FeMg = 0.9
 
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0.0
+    wt_frac_water = 0.05
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 0
+    number_h2o_layers = 200
 
     # The potential Temperature of Water, if present
     water_potential_temp = 300.
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     #Now let us plot
     import matplotlib.pyplot as plt
 
-    figure = plt.figure(figsize=(12, 10))
+    figure = plt.figure(figsize=(8, 6.5))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
     ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
     ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
     ax1.minorticks_on()
-    text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
+    text = '%.3f' % (Planet['mass'][-1] / 5.97e24) + ' Earth masses on last iteration'
     ax1.text(0.05, 0.95, text)
 
     # Make a subplot showing the calculated pressure profile
