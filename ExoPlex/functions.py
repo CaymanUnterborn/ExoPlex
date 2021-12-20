@@ -666,7 +666,10 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         if radius_planet < 1.6:
             Mass = brentq(calc_planet_radius, (.5*mass_guess),  1.1*mass_guess, args=args, xtol=1e-1)
         else:
-            Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 18., args=args, xtol=1e-1)
+            if core_mass_frac < 0.15:
+                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 1.1*mass_guess, args=args, xtol=1e-1)
+            else:
+                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 18., args=args, xtol=1e-1)
     else:
         Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.5*mass_guess, args=args, xtol=1e-1)
 
