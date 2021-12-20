@@ -612,6 +612,8 @@ def calc_planet_radius(mass_guess,args):
     core_mass_frac = args[6]
     verbose = args[7]
 
+    if verbose == True:
+        print("Trying mass: ", round(mass_guess,2), "Earth masses")
     Planet = planet.initialize_by_mass(
         *[mass_guess, structure_params, compositional_params, layers, core_mass_frac, grids])
 
@@ -651,17 +653,22 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     """
 
     from scipy.optimize import brentq
-
-    if layers[-1] > 0:
-        den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
-        mass_guess = 0.5*(den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3))) / 5.97e24
-    else:
-        den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
-        mass_guess = -1+(den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3))) / 5.97e24
-
-
     args = [radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac, verbose]
-    Mass = brentq(calc_planet_radius,mass_guess-(.25*mass_guess), mass_guess+1, args=args, xtol=1e-2)
+    den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
+    mass_guess = round((den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3))) / 5.97e24, 1)
+
+    if layers[-1] > 0: #water
+        Mass = brentq(calc_planet_radius, 0.3*mass_guess, mass_guess , args=args, xtol=1e-1)
+    elif compositional_params[1]>1: #big core
+        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.4*mass_guess, args=args, xtol=1e-1)
+
+    elif compositional_params[1]<=0.6: #small core
+        if radius_planet < 1.6:
+            Mass = brentq(calc_planet_radius, (.5*mass_guess),  1.1*mass_guess, args=args, xtol=1e-1)
+        else:
+            Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 18., args=args, xtol=1e-1)
+    else:
+        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.5*mass_guess, args=args, xtol=1e-1)
 
     Planet = planet.initialize_by_mass(
         *[Mass, structure_params, compositional_params, layers, core_mass_frac, grids])
