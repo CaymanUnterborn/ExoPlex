@@ -30,7 +30,7 @@ if __name__ == "__main__":
     #Need to give the run a name. This will be used as the name of the output files
     Output_filename = 'Filename'
 
-
+    print("here")
     #Next user must input the ratios by mole (Earth is Ca/Mg = .07, Si.Mg = 0.90, Al/Mg = 0.09, Fe/Mg = 0.9)
     CaMg = 0.07
     SiMg = 0.9
@@ -38,10 +38,10 @@ if __name__ == "__main__":
     FeMg = 0.9
 
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0.05
+    wt_frac_water = 0.0
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 200
+    number_h2o_layers = 0
 
     # The potential Temperature of Water, if present
     water_potential_temp = 300.

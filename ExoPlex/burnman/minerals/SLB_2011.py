@@ -1467,7 +1467,7 @@ class mg_perovskite (Mineral):
         self.params = {
             'name': 'Mg_Perovskite',
             'formula': formula,
-            'equation_of_state': 'slb3',
+            'equation_of_state': 'bm3',
             'F_0': -1368283.0,
             'V_0': 2.4445e-05,
             'K_0': 2.505264e+11,
@@ -1689,7 +1689,7 @@ class periclase (Mineral):
         self.params = {
             'name': 'Periclase',
             'formula': formula,
-            'equation_of_state': 'slb3',
+            'equation_of_state': 'bm3',
             'F_0': -569444.6,
             'V_0': 1.1244e-05,
             'K_0': 1.613836e+11,

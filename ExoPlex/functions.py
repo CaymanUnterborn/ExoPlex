@@ -602,6 +602,28 @@ def write(Planet,filename):
     print()
     return 0
 
+def calc_planet_radius(mass_guess,args):
+    radius_planet = args[0]
+    structure_params = args[1]
+    compositional_params = args[2]
+    layers = args[3]
+    grids = args[4]
+    Core_wt_per = args[5]
+    core_mass_frac = args[6]
+    verbose = args[7]
+
+    if verbose == True:
+        print("Trying mass: ", round(mass_guess,2), "Earth masses")
+    Planet = planet.initialize_by_mass(
+        *[mass_guess, structure_params, compositional_params, layers, core_mass_frac, grids])
+
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
+    if verbose == True:
+        print()
+        print("Difference between actual and guess radius = ", radius_planet - (Planet['radius'][-1]/6371e3))
+        print()
+    return (1.-(radius_planet/(Planet['radius'][-1]/6371e3)))
+
 def find_Planet_radius(radius_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers,verbose):
     """
     This module contains functions to determine the a planet's mass when given radius and composition. Because we conserve the mass ratios of the planet \
@@ -630,107 +652,33 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
     """
 
+    from scipy.optimize import brentq
+    args = [radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac, verbose]
+    den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
+    mass_guess = round((den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3))) / 5.97e24, 1)
 
-    def calc_CRF(value, args):
-        radius_planet = args[0]
-        structure_params = args[1]
-        compositional_params = args[2]
-        num_core_layers = args[3][1]
-        grids = args[4]
-        Core_wt_per = args[5]
-        CMF_to_fit = args[6]
-        verbose = args[7]
+    if layers[-1] > 0: #water
+        Mass = brentq(calc_planet_radius, 0.3*mass_guess, mass_guess , args=args, xtol=1e-1)
+    elif compositional_params[1]>1: #big core
+        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.4*mass_guess, args=args, xtol=1e-1)
 
-        structure_params[6] = value
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers,grids])
-
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
-
-        planet_mass = minphys.get_mass(Planet,layers)
-
-        CMF = planet_mass[num_core_layers]/planet_mass[-1]
-        if verbose == True:
-            print("Diff in Core Mass Fraction = ", '%.3e' % (CMF_to_fit - CMF))
-
-
-        return (1.-(CMF_to_fit /CMF))
-
-    def calc_CRF_WRF(values, *args):
-        radius_planet = args[0]
-        structure_params = args[1]
-        compositional_params = args[2]
-        num_core_layers = args[3][1]
-        num_mantle_layers = args[3][0]
-        num_water_laters = args[3][2]
-        grids = args[4]
-        Core_wt_per = args[5]
-        CMF_to_fit = args[6]
-        WMF_to_fit = args[7]
-        verbose = args[8]
-
-        structure_params[6] = values[0]
-        structure_params[8] = values[1]
-
-        if values[0] <= 0.005 or values[1] <= 0.005 or values[0] >= 1 or values[1] >=1:
-            if values[0] <= .05:
-                return (10.,1)
-            if values[1] <= .05:
-                return (1,10)
-            if values[1] <= .95:
-                return (1,-10)
-            if values[0] <= .95:
-                return (-10,1)
-
-        if (values[0]+values[1]) >= 1:
-            if values[0] > values[1]:
-                return (-15.,0)
-            if values[1] > values[0]:
-                return (0,-15.)
-
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per, layers,grids])
-
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
-
-
-        planet_mass = minphys.get_mass(Planet,layers)
-        core_mass = planet_mass[num_core_layers]
-        terrestrial_mass = planet_mass[num_core_layers+num_mantle_layers]
-        water_mass = planet_mass[-1] - terrestrial_mass
-
-        CMF = core_mass/terrestrial_mass
-        WMF = water_mass/planet_mass[-1]
-        if verbose == True:
-            print("Diff in Core Mass percent = ", '%.3f' % (100.*CMF_to_fit - 100.*CMF))
-            print("Diff in Water Mass percent = ", '%.3f' % (100.*WMF_to_fit - 100.*WMF))
-
-
-        return (100.*CMF_to_fit - 100.*CMF,100.*WMF_to_fit - 100.*WMF)
-
-
-    if layers[2] > 0:
-        from scipy.optimize import root
-
-        water_mass_frac = compositional_params[0]
-        args = (radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac,water_mass_frac,verbose)
-        solution = root(calc_CRF_WRF, [.3,water_mass_frac],args=args,tol=1.e-3,method='anderson')
-        structure_params[6], structure_params[8] = solution.x
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params,Core_wt_per, layers,grids])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
-
-        return Planet
-
+    elif compositional_params[1]<=0.6: #small core
+        if radius_planet < 1.6:
+            Mass = brentq(calc_planet_radius, (.5*mass_guess),  1.1*mass_guess, args=args, xtol=1e-1)
+        else:
+            if core_mass_frac < 0.15:
+                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 1.1*mass_guess, args=args, xtol=1e-1)
+            else:
+                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 18., args=args, xtol=1e-1)
     else:
-        from scipy.optimize import brentq
-        args = [radius_planet, structure_params, compositional_params, layers,grids,Core_wt_per,core_mass_frac,verbose]
-        structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.2,pow(core_mass_frac,0.5)+.1,args=args,xtol=1e-3)
+        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.5*mass_guess, args=args, xtol=1e-1)
 
-            #structure_params[6] = brentq(calc_CRF,pow(core_mass_frac,0.5)-.3,.95,args=args,xtol=1e-3)
+    Planet = planet.initialize_by_mass(
+        *[Mass, structure_params, compositional_params, layers, core_mass_frac, grids])
 
-        Planet = planet.initialize_by_radius(*[radius_planet, structure_params, compositional_params, Core_wt_per,layers,grids])
-        Planet = planet.compress_radius(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
 
-
-        return Planet
+    return Planet
 
 def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositional_params, grids, Core_wt_per, layers,verbose):
     """
