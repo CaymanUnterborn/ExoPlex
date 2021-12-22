@@ -44,7 +44,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
         P_points_water = Pressure_layers[(num_mantle_layers+num_core_layers):]
         T_points_water = Temperature_layers[(num_mantle_layers+num_core_layers):]
         water_rho = get_water_rho(P_points_water, T_points_water,grids)
-        rho_layers[num_core_layers+num_mantle_layers:] = water_rho
+        #rho_layers[num_core_layers+num_mantle_layers:] = water_rho
 
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
@@ -56,8 +56,8 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     if number_h2o_layers > 0:
         P_points_water = Pressure_layers[(num_mantle_layers + num_core_layers ):]
         T_points_water = Temperature_layers[(num_mantle_layers + num_core_layers):]
-        water_rho = get_water_rho(P_points_water, T_points_water,grids)
-        rho_layers[num_core_layers + num_mantle_layers:] = water_rho
+        water_rho =  get_water_rho(P_points_water, T_points_water,grids)
+        #rho_layers[num_core_layers + num_mantle_layers:] = water_rho
 
     P_points_UM = []
     T_points_UM = []
@@ -132,9 +132,12 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     mantle_data = np.append(LM_data, UM_data)
 
-    rho_layers = np.append(core_data,mantle_data)
-    rho_layers[num_core_layers:num_core_layers + num_mantle_layers] = mantle_data
+    if number_h2o_layers > 0:
+        rho_layers = np.concatenate((core_data,mantle_data,water_rho))
+    else:
+        rho_layers= np.append(core_data,mantle_data)
 
+    #rho_layers[num_core_layers:num_core_layers + num_mantle_layers] = mantle_data
 
     return rho_layers
 
@@ -186,7 +189,6 @@ def get_water_rho(Pressure,Temperature,grids):
         list of calculated density of water [kg/m^3]
 
     """
-
     Water_density = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['density'],
     (Pressure, Temperature), method = 'linear')
 
@@ -261,7 +263,6 @@ def get_gravity(Planet,layers):
     radii = Planet.get('radius')
     density = Planet.get('density')
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
-
 
     radii_core = radii[:num_core_layers]
     density_core = density[:num_core_layers]
@@ -469,9 +470,11 @@ def get_radius(Planet,layers):
     val = 4. * np.pi / 3.
     #Not getting radius for fiinal
     radius[1] = pow(mass[1]/density[1]/val,1./3)
+
     for i in range(len(radius))[1:]:
         mass_lay = mass[i]-mass[i-1]
-        radius[i] = np.cbrt(mass_lay/density[i]/val +pow(radius[i-1],3.))
+        radius[i] = np.cbrt(mass_lay/density[i]/val +pow(radius[i-1],3.)) #cuberoot
+
 
     #print(radius[-1]/1000.)
     return radius

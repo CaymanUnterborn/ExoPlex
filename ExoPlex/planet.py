@@ -48,7 +48,7 @@ def initialize_by_mass(*args):
 
     core_rad_frac = structural_params[6]
     Mantle_potential_temp = structural_params[7]
-    water_rad_frac = structural_params[8]
+    water_rad_frac = compositional_params[0]
     water_potential_temp = structural_params[9]
 
     Radius_planet_guess = pow(mass_planet*5.97e24 / 5500. / (4*np.pi/3.),1/3.)/6371e3
@@ -63,7 +63,7 @@ def initialize_by_mass(*args):
         core_thickness_guess = core_rad_frac * (Radius_planet_guess*6371e3)
         mantle_thickness_guess = Radius_planet_guess*6371e3 - core_thickness_guess
 
-    if wt_frac_water == 0. and number_h2o_layers > 0:
+    if (wt_frac_water == 0. and number_h2o_layers > 0) or (number_h2o_layers == 0 and wt_frac_water > 0):
        print ("You have layers of water but no water!")
        number_h2o_layers = 0
 
@@ -145,7 +145,6 @@ def initialize_by_mass(*args):
     rho_core = interpolate.griddata((core_grid['pressure'], core_grid['temperature']),
                                             core_grid['density'], (P_core, T_core), method='linear')
     for i in range(num_layers):
-
         if i < num_core_layers:
                 radius_layers[i] =((float(i) / num_core_layers) * core_thickness_guess)
                 density_layers[i] = rho_core[i]
@@ -162,15 +161,13 @@ def initialize_by_mass(*args):
 
             radius_layers[i] =  core_thickness_guess+ ((((i - num_core_layers) / num_mantle_layers) * mantle_thickness_guess))
 
-
-
         else:
             radius_layers[i] = core_thickness_guess + mantle_thickness_guess + \
                                ((float(
                                    i - num_core_layers - num_mantle_layers) / number_h2o_layers) * water_thickness_guess)
             mass_layers[i] = (water_mass / number_h2o_layers)
-            Volume_out = 4. * np.pi / 3 * pow(radius_layers[i] , 3)
-            Volume_in = 4. * np.pi / 3 * pow(radius_layers[i - 1] , 3)
+            #Volume_out = 4. * np.pi / 3 * pow(radius_layers[i] , 3)
+            #Volume_in = 4. * np.pi / 3 * pow(radius_layers[i - 1] , 3)
             density_layers[i] = 1000+i
             # print(i,radius_layers[i],Volume_out-Volume_in,mass_layers[i],density_layers[i])
 
@@ -241,17 +238,19 @@ def compress_mass(*args):
             converge,old_r = minphys.check_convergence(Planet['density'],old_r)
 
         for i in range(len(Planet['radius'])-1)[::-1]:
+
             if Planet['temperature'][i]>7000:
                 Planet['temperature'][i] = 6900
             if Planet['temperature'][i]<1700 and i < layers[1]:
                 Planet['temperature'][i] = 1710
-            if Planet['temperature'][i] < mantle_pot_temp:
+
+            if Planet['temperature'][i] < mantle_pot_temp and i < layers[0]+layers[1]:
                 Planet['temperature'][i] = mantle_pot_temp
-            if Planet['pressure'][i]/10/1000 >2700 and i >= layers[1]:
+            if Planet['pressure'][i]/10/1000 >2700:
                 Planet['pressure'][i] =2650*10*1000.
             if Planet['pressure'][i]/10/1000<10 and i < layers[1]:
                 Planet['pressure'][i] = 10.000001*10*1000
-            if Planet['pressure'][i]/10/1000 > 11.5 and Planet['temperature'][i] < 1700 and i > layers[1]:
+            if Planet['pressure'][i]/10/1000 > 11.5 and Planet['temperature'][i] < 1700 and i > layers[1] and  i < layers[0]+layers[1]:
                 Planet['temperature'][i] = 1710
 
 
@@ -264,7 +263,6 @@ def compress_mass(*args):
         Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
 
         Planet['pressure'] = minphys.get_pressure(Planet,layers)
-
 
         n_iterations+=1
 
