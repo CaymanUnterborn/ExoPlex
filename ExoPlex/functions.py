@@ -7,6 +7,16 @@ from ExoPlex import minphys as minphys
 
 ToPa = 100000.
 
+#constants, atomic masses
+mFe = 55.845
+mMg = 24.306
+mSi = 28.0867
+mO = 15.9994
+mS = 32.0650
+mCa = 40.078
+mAl = 26.981
+
+
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
     mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((55.845 + 15.999) * FeMg)) * (
@@ -14,6 +24,42 @@ def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
                     2 * SiMg + 1.5 * AlMg + CaMg + 1))) / (1 - wt_frac_FeO_wanted)
 
     return mol_frac_Fe_mantle
+
+def get_Si_core_w_FeO(compositional_params):
+
+    FeMg = compositional_params[1]
+    SiMg = compositional_params[2]
+    CaMg = compositional_params[3]
+    AlMg = compositional_params[4]
+    wt_fe_m = compositional_params[5]
+    wt_frac_Si_core = compositional_params[6]
+
+    conserve_oxy = compositional_params[11]
+
+
+    if conserve_oxy == True and  wt_fe_m > 0:
+        print("Please note this will over-write your choice of wt% Si in core since O is conserved")
+        m_feo = mO+mFe
+        OTR = mMg + CaMg*mCa + AlMg*mAl + mO*(1+CaMg + 1.5*AlMg)
+
+        mols_fe_m = wt_fe_m*(OTR + SiMg*(mSi+2*mO))/(m_feo - wt_fe_m*(mFe-.5*mSi))
+        wt_frac_Si_core = .5*mols_fe_m*mSi / (FeMg*mFe + mols_fe_m*(.5*mSi - mFe))
+
+        mol_frac_Fe_mantle = mols_fe_m/FeMg
+
+
+        return(wt_frac_Si_core,mol_frac_Fe_mantle)
+    elif wt_fe_m > 0:
+        print("Please note that you have FeO but are not conserving oxygen by placing Si into the core")
+        mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
+
+        return(0, mol_frac_Fe_mantle)
+    else:
+        if wt_frac_Si_core > 0:
+            print("Please note, this model has Si in the core but no FeO")
+
+        return(wt_frac_Si_core,0)
+
 
 def get_percents(compositional_params,verbose):
 
@@ -41,24 +87,16 @@ def get_percents(compositional_params,verbose):
     SiMg = compositional_params[2]
     CaMg = compositional_params[3]
     AlMg = compositional_params[4]
-    mol_frac_Fe_mantle = compositional_params[5]
+    wt_fe_m = compositional_params[5]
     wt_frac_Si_core = compositional_params[6]
     wt_frac_O_core = compositional_params[7]
     wt_frac_S_core = compositional_params[8]
+    conserve_oxy = compositional_params[11]
 
     MgSi = 1./SiMg
     FeSi = FeMg*MgSi
     CaSi = CaMg*MgSi
     AlSi = AlMg*MgSi
-
-#constants, atomic masses
-    mFe      = 55.845
-    mMg      = 24.306
-    mSi      = 28.0867
-    mO       = 15.9994
-    mS       = 32.0650
-    mCa      = 40.078
-    mAl      = 26.981
 
 
     # system of equation which when solved gives molar values of elements in mantle and core
@@ -66,23 +104,7 @@ def get_percents(compositional_params,verbose):
     #Sum of all masses = 100 g
     b = np.array([0., 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
 
-    print()
-    if wt_frac_Si_core >0:
-        Mass_plan = FeMg*mFe + SiMg*mSi + AlMg*mAl + CaMg*mCa + mMg + (1.+(2*SiMg)+(1.5*AlMg)+CaMg )*mO
-        WTO = AlMg*mAl + CaMg*mCa + mMg +(1.+(2*SiMg)+(1.5*AlMg)+CaMg )*mO
-
-        m_core = (Mass_plan -WTO - SiMg*mSi)/(1.+(wt_frac_Si_core*(2.*(mFe/mSi)-1.)))
-        mol_si_core = m_core*(wt_frac_Si_core/mSi)
-        mole_Fe_mant = 2.*mol_si_core
-
-        print("plan",Mass_plan)
-        print("core",m_core)
-        print("CMF",m_core/Mass_plan)
-        print("Si Core",mol_si_core)
-        print("Fe mant",mole_Fe_mant)
-
-        print("moles of all Fe in mantle",mole_Fe_mant/FeMg)
-        mol_frac_Fe_mantle = mole_Fe_mant/FeMg
+    wt_frac_Si_core, mol_frac_Fe_mantle = get_Si_core_w_FeO(compositional_params)
 
 
 ############################################################################################
@@ -119,7 +141,16 @@ def get_percents(compositional_params,verbose):
     #in order Fe, Mg, Si, O, Ca, Al in mantle
     Mantle_moles = Num_moles[4:]
 
+    for i in Core_moles:
+        if i <0:
+            print("You have a negative composition, therefore your chosen composition is not valid stoichiometrically" )
+            sys.exit()
+    for i in Mantle_moles:
+        if i <0:
+            print("You have a negative composition, therefore your chosen composition is not valid stoichiometrically" )
+            sys.exit()
     tot_moles_core = sum(Core_moles)
+
 
     mass_of_Core = (mFe*(Core_moles[0])+(mSi*Core_moles[1])\
                     +((mO)*Core_moles[2])+(mS*Core_moles[3]))
@@ -128,11 +159,17 @@ def get_percents(compositional_params,verbose):
                    +(mSi*Mantle_moles[2])+(mO*Mantle_moles[3])\
                    +(mCa*Mantle_moles[4])+(mAl*Mantle_moles[5])
 
+
     # Mass of 100 mole planet in g
     Mtot= mass_of_Core+mass_of_Mantle
 
     #Core mass fraction of planet
     core_mass_frac = mass_of_Core/Mtot
+
+    if core_mass_frac <=0:
+        print("Your chosen composition has a negative core mass fraction")
+        print("This is likely due to too low of an Fe/Mg and too high of a mantle FeO content")
+        sys.exit()
 
     #Weight percents of mantle oxides
     #Weight percents assuming FeO, MgO, SiO2, CaO, Al2O3
@@ -142,6 +179,7 @@ def get_percents(compositional_params,verbose):
     Si_moles_mant = Mantle_moles[2]
     Ca_moles_mant = Mantle_moles[4]
     Al_moles_mant = Mantle_moles[5]
+
 
     FeO_mant_wt = Fe_moles_mant*(mFe+mO)/mass_of_Mantle
     MgO_mant_wt = Mg_moles_mant*(mMg+mO)/mass_of_Mantle
@@ -164,7 +202,6 @@ def get_percents(compositional_params,verbose):
     Al2O3_mant_wt  = abs(round(Al2O3_mant_wt * 100., 8))
     Mantle_wt_per = {'FeO': FeO_mant_wt, 'SiO2': SiO2_mant_wt, 'MgO': MgO_mant_wt, \
                      'CaO': CaO_mant_wt,'Al2O3':Al2O3_mant_wt}
-
 
     # this is the wt% of elements in the core
 
@@ -192,12 +229,21 @@ def get_percents(compositional_params,verbose):
         print("Mantle Fe#", Mantle_moles[0]/(Mantle_moles[0]+Mantle_moles[1]))
         print("Core Mass Percent = ", '%.3f'%(core_mass_frac*100.))
         print()
+
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
-def make_core_grid(Core_wt_per):
+def make_core_grid(compositional_params,use_high):
 
-    file = open('../Solutions_Small/liquid_iron_grid.dat')
+    wt_per_Fe = compositional_params[5]
+    if use_high == True:
+        print("Using coarser high FeO Core grid: liquid_iron_grid_highfeo.dat")
+        file = open('../Solutions_Small/liquid_iron_grid_highfeo.dat')
+
+    else:
+        print("Using normal Core grid: liquid_iron_grid.dat")
+        file = open('../Solutions_Small/liquid_iron_grid.dat')
+
     temp_file = file.readlines()
     num_rows = len(temp_file[1:])
     num_columns = len(temp_file[12].split(','))
@@ -285,12 +331,12 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         Keys include: 'temperature','pressure','density','alpha','cp','phases'
 
     """
+
     if use_grids==True:
         if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')
         else:
             file = open(Mantle_filename+'_LM_results.txt','r')
-
 
         temp_file = file.readlines()
         num_rows = len(temp_file[1:])
@@ -320,13 +366,10 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
 
         num_phases = len(grid[0][5:])-1
 
-
-
         temperature_grid = np.array([row[1] for row in grid])
 
         pressure_grid = np.array([row[0] for row in grid])
         density_grid = np.array([row[2]*1000 for row in grid])
-        #speed_grid = [[row[3],row[4],row[5]] for row in grid]
         alpha_grid = [pow(10,row[3]) for row in grid]
         cp_grid = [row[4] for row in grid]
         phase_grid = [row[5:-1] for row in grid]
@@ -354,7 +397,6 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         grid = np.zeros((num_rows, num_columns))
 
         for i in range(num_rows):
-            # for j in range(num_columns):
             columns = data[i].strip('\n').split()
             grid[i] = [float(j) for j in columns]
 
@@ -370,6 +412,8 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         alpha_grid = [row[6] for row in grid]
         cp_grid = [row[7] for row in grid]
         phase_grid = [row[8:] for row in grid]
+
+
 
         keys = ['temperature', 'pressure', 'density', 'speeds', 'alpha', 'cp', 'phases']
         return dict(zip(keys, [temperature_grid, pressure_grid, density_grid, speed_grid, alpha_grid, cp_grid,
@@ -424,9 +468,6 @@ def get_phases(Planet,grids,layers,combine_phases):
     else:
         Mantle_phases = Mantle_phases_UM
 
-
-
-    #phase_dict = {i:} for }
     for i in range(len(Mantle_phases)):
         entry = np.zeros(len(Mantle_phases[i]))
         tot = sum(Mantle_phases[i])
@@ -461,8 +502,6 @@ def get_phases(Planet,grids,layers,combine_phases):
         Phases[0:num_core_layers, 0:len(Mantle_phases[0])] = Core_phases
 
         Phases[num_core_layers:(num_mantle_layers + num_core_layers), 0:len(Mantle_phases[0])] = Mantle_phases
-
-    # add in the core:
 
     if number_h2o_layers > 0:
         P_wat=[]
@@ -503,7 +542,6 @@ def get_phases(Planet,grids,layers,combine_phases):
             if i < num_core_layers:
                 Phases[i][len(Mantle_phases[0]):] = 100.
             else:
-                # Phases[i] =np.resize(Phases[i],len(Phases[i])+4)
                 Phases[i][len(Mantle_phases[0]):] = 0.
     phase_names = Planet['phase_names']
 
@@ -576,7 +614,7 @@ def write(Planet,filename):
     output = []
     for i in range(len(Planet['pressure'])):
         line_item = [(Planet['radius'][-1]-Planet['radius'][i])/1000.,Planet['radius'][i]/1000.,
-                     Planet['density'][i]/1000.,Planet['pressure'][i]/10000.,Planet['temperature'][i]]
+                     Planet['density'][i]/1000.,Planet['pressure'][i]/10000.,Planet['temperature'][i],Planet['gravity'][i]]
         for j in range(len(Planet['phases'][i])):
             line_item.append(Planet['phases'][i][j])
 
@@ -587,6 +625,7 @@ def write(Planet,filename):
     line_name.append('Density')
     line_name.append('Pressure')
     line_name.append('Temperature')
+    line_name.append('Gravity')
 
     for i in Planet['phase_names']:
         line_name.append(str(i))
@@ -613,7 +652,7 @@ def calc_planet_radius(mass_guess,args):
     verbose = args[7]
 
     if verbose == True:
-        print("Trying mass: ", round(mass_guess,2), "Earth masses")
+        print("Trying mass: ", round(mass_guess,5), "Earth masses")
     Planet = planet.initialize_by_mass(
         *[mass_guess, structure_params, compositional_params, layers, core_mass_frac, grids])
 
@@ -655,24 +694,9 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     from scipy.optimize import brentq
     args = [radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac, verbose]
     den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
-    mass_guess = round((den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3))) / 5.97e24, 1)
+    mass_guess = den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3)) / 5.97e24
 
-    if layers[-1] > 0: #water
-        Mass = brentq(calc_planet_radius, 0.3*mass_guess, mass_guess , args=args, xtol=1e-1)
-    elif compositional_params[1]>1: #big core
-        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.4*mass_guess, args=args, xtol=1e-1)
-
-    elif compositional_params[1]<=0.6: #small core
-        if radius_planet < 1.6:
-            Mass = brentq(calc_planet_radius, (.5*mass_guess),  1.1*mass_guess, args=args, xtol=1e-1)
-        else:
-            if core_mass_frac < 0.15:
-                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 1.1*mass_guess, args=args, xtol=1e-1)
-            else:
-                Mass = brentq(calc_planet_radius, 0.5*(mass_guess), 18., args=args, xtol=1e-1)
-    else:
-        Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.5*mass_guess, args=args, xtol=1e-1)
-
+    Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.3*mass_guess, args=args, xtol=1e-5)
     Planet = planet.initialize_by_mass(
         *[Mass, structure_params, compositional_params, layers, core_mass_frac, grids])
 
@@ -754,7 +778,6 @@ def find_filename(compositional_params,verbose):
 
     range_AlMg = np.array([0.04 + 0.01*x for x in range(8)])
     range_FeO = np.array([0.,.02,.04,.06,.08,.1,.15,.20])
-
 
     assert SiMg <= max(range_SiMg) ,"Si/Mg is too high and outside of range of grids. max = "+ str(max(range_SiMg))+ " your value = "+ str(SiMg)
     assert  SiMg >= min(range_SiMg),"Si/Mg is outside of range of grids"

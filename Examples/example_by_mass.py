@@ -23,6 +23,7 @@ water_rad_frac_guess = 0.
 combine_phases = True
 use_grids = True
 verbose = True
+
 import ExoPlex as exo
 
 if __name__ == "__main__":
@@ -37,9 +38,8 @@ if __name__ == "__main__":
     AlMg = 0.09
     FeMg = 0.9
 
-
     #How much water do you want in your planet? By mass fraction.
-    wt_frac_water = 0
+    wt_frac_water = 0.0
 
     #Don't forget that if you have water you need to add water layers
     number_h2o_layers = 0
@@ -47,13 +47,14 @@ if __name__ == "__main__":
     #The potential Temperature of Water, if present
     water_potential_temp = 300.
 
+    #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
+    wt_frac_FeO_wanted = 0. #by mass
+    Conserve_oxy = False
+
     #Now we can mix various elements into the core or mantle
-    wt_frac_Si_core = 0.0 #by mass <1
+    wt_frac_Si_core = 0.0 #by mass <1, note if you conserve oxygen this is calculated for you
     wt_frac_O_core = 0.0 #by mass
     wt_frac_S_core = 0.0 #by mass
-
-    #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
-    wt_frac_FeO_wanted = 0.0 #by mass
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -78,8 +79,8 @@ if __name__ == "__main__":
 
 
 
-    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,exo.functions.get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg),wt_frac_Si_core, \
-                          wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids]
+    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
+                          wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids,Conserve_oxy]
 
     if use_grids == True:
         filename = exo.functions.find_filename(compositional_params,verbose)
@@ -106,22 +107,25 @@ if __name__ == "__main__":
     #Planet.get('temperature') = list of temperature points from calculation (K)
     #Planet.get('gravity') = list of gravity points from calculation (SI)
     #Planet.get('pressure') = list of pressure points from calculation (bar)
+    #Planet.get('phases') = list of phases and their molar fractions
     #Planet.get('alpha') = list of values of thermal expansivity points from calculation (1/K)
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
-    #Planet.get('phases') = list of phases and their molar fractions
+
     print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
     print("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
     print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
     print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
     print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
-    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers-1]/10000), "GPa")
-
+    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]//1e4), "GPa")
+    print("CMB Temperature = " ,'%.2f' % (Planet['temperature'][num_core_layers]), "K")
     print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
-    print("central core temp",'%.2f' % (Planet['temperature'][0]))
+    print("Central core pressure",'%.2f' % (Planet['pressure'][0]/1e7),"TPa")
+    print("Central core Temperature",'%.2f' % (Planet['temperature'][0]),"K")
+
     #If you'd like the full output, uncomment out these lines!
-    Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
-    exo.functions.write(Planet,Output_filename)
+    #Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
+    #exo.functions.write(Planet,Output_filename)
 
     #Now let us plot
     import matplotlib.pyplot as plt
