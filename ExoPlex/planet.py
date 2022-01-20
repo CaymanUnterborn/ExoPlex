@@ -1,5 +1,8 @@
 import sys
 import numpy as np
+
+import ExoPlex.minphys
+
 Earth_radius = 6371e3
 Earth_mass = 5.97e24
 ToPa = 100000.
@@ -35,6 +38,8 @@ def initialize_by_mass(*args):
     rock = bm.Composite([bm.minerals.SLB_2011.mg_perovskite(),
                          bm.minerals.SLB_2011.periclase()], \
                         [0.8, 0.2])
+
+    ice = bm.minerals.other.water()
     mass_planet = args[0]
     structural_params = args[1]
     compositional_params = args[2]
@@ -42,9 +47,9 @@ def initialize_by_mass(*args):
     num_mantle_layers, num_core_layers, number_h2o_layers = args[3]
     core_mass_frac = args[4]
     core_grid = args[5][2]
-
+    water_grid = args[5]
     wt_frac_water, FeMg, SiMg, CaMg, AlMg, mol_frac_Fe_mantle, wt_frac_Si_core, \
-     wt_frac_O_core, wt_frac_S_core,combine_phases,use_grids = compositional_params
+     wt_frac_O_core, wt_frac_S_core,combine_phases,use_grids,conserve_oxy = compositional_params
 
     core_rad_frac = structural_params[6]
     Mantle_potential_temp = structural_params[7]
@@ -52,11 +57,14 @@ def initialize_by_mass(*args):
     water_potential_temp = structural_params[9]
 
     Radius_planet_guess = pow(mass_planet*5.97e24 / 5500. / (4*np.pi/3.),1/3.)/6371e3
+
     if Radius_planet_guess > 2:
         Radius_planet_guess = 2.
 
+    Radius_planet_guess = 1
     if number_h2o_layers > 0:
         water_thickness_guess = water_rad_frac*Radius_planet_guess*6371e3
+
         core_thickness_guess = core_rad_frac * (Radius_planet_guess*6371e3-water_thickness_guess)
         mantle_thickness_guess = Radius_planet_guess*6371e3 - water_thickness_guess - core_thickness_guess
     else:
@@ -68,14 +76,10 @@ def initialize_by_mass(*args):
        number_h2o_layers = 0
 
     num_layers = num_core_layers+num_mantle_layers + number_h2o_layers # add 50 shells if there is an h2O layer
-    # arrays to be used
 
     # these grids are initialized in this function and are then a passed around through the other routines and edited each iteration
-    radius_layers = np.zeros(num_layers)
     density_layers = np.zeros(num_layers)
-    volume_layers = np.zeros(num_layers)
     mass_layers = np.zeros(num_layers)
-    cumulative_mass = np.zeros(num_layers)
     Temperature_layers = np.zeros(num_layers)
     radius_layers = np.zeros(num_layers)
 
@@ -84,18 +88,13 @@ def initialize_by_mass(*args):
     Pressure_layers = np.zeros(num_layers)
     alpha = np.zeros(num_layers)
     cp = np.zeros(num_layers)
-    Vphi = np.zeros(num_layers )
 
-    Vs = np.zeros(num_layers )
-    Vp = np.zeros(num_layers)
-    K =  np.zeros(num_layers)
 
-    # 15 mineral phases + 2ice + liquid water #phasechange
     water_mass = (wt_frac_water*mass_planet)*Earth_mass
-    core_mass = (core_mass_frac * (mass_planet*Earth_mass-water_mass))
+    core_mass = ((mass_planet*(1-wt_frac_water))* core_mass_frac *Earth_mass)
     mantle_mass = (mass_planet*Earth_mass)-water_mass-core_mass
 
-    #Update to use BurnMan
+
     radius_planet = Radius_planet_guess
     CMB_T_guess = (4180.*(radius_planet-0)-2764.*pow(radius_planet-0,2.)+1219.*pow(radius_planet-0,3.)) + (Mantle_potential_temp-1600)*(0.82+pow(radius_planet-0,1.81))
 
@@ -103,38 +102,31 @@ def initialize_by_mass(*args):
         CMB_T_guess = Mantle_potential_temp + 1000
     if CMB_T_guess > 7000:
         CMB_T_guess = 6800
-    #print("CMBT guess",CMB_T_guess)
     CMB_P_guess = 10000*(262.*(radius_planet)-550.*pow(radius_planet,2.) + 432.*pow(radius_planet,3.))
-    #print(radius_planet,CMB_T_guess)
 
     dP_dr = (CMB_P_guess)/(num_mantle_layers)
     dT_dr = (CMB_T_guess-Mantle_potential_temp)/(num_mantle_layers)
 
+
+    if wt_frac_water > 0:
+        WMB_pres = 1e5
+    else:
+        WMB_pres = 1
     for i in range(num_layers):
 
             if i<number_h2o_layers:
-                Pressure_layers[i] = 1 + i*(wt_frac_water*10000)
-                Temperature_layers[i] = water_potential_temp+i/10.
+                Pressure_layers[i] = 1 + WMB_pres*(i/number_h2o_layers)
+                Temperature_layers[i] = water_potential_temp+100*(i/number_h2o_layers)
 
             elif i <= number_h2o_layers+num_mantle_layers-1:
-                Pressure_layers[i] = 5000. + dP_dr*(i-number_h2o_layers)
+                Pressure_layers[i] = WMB_pres + dP_dr*(i-number_h2o_layers)
                 Temperature_layers[i] = Mantle_potential_temp+dT_dr*(i-number_h2o_layers)
 
             else:
-                if mass_planet >0.5:
-                    Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*5000
-                else:
-                    Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*500
+                Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*5000
+                Temperature_layers[i] = Temperature_layers[i-1]+0.5*(i-number_h2o_layers-num_mantle_layers)/num_core_layers
 
-                #Pressure_layers[number_h2o_layers+num_mantle_layers-1]  + 3.5*(dP_dr*num_mantle_layers/num_core_layers)*(i-number_h2o_layers-num_mantle_layers)
 
-                if Temperature_layers[i-1] < 1700:
-                    Temperature_layers[i] = 1705
-                else:
-                    if mass_planet > 0.5:
-                        Temperature_layers[i] = Temperature_layers[i-1]+5
-                    else:
-                        Temperature_layers[i] = Temperature_layers[i-1]+0.5
 
 
     Pressure_layers = Pressure_layers[::-1]
@@ -146,19 +138,17 @@ def initialize_by_mass(*args):
                                             core_grid['density'], (P_core, T_core), method='linear')
     for i in range(num_layers):
         if i < num_core_layers:
+                mass_layers[i] = core_mass/(num_core_layers)
                 radius_layers[i] =((float(i) / num_core_layers) * core_thickness_guess)
                 density_layers[i] = rho_core[i]
-                mass_layers[i] = core_mass/num_core_layers
-
-                #print(i, radius_layers[i] / 6371e3, Volume_out, Volume_in, Volume_out - Volume_in, mass_layers[i],density_layers[i] / 1000)
 
 
-        elif i <= (num_core_layers + num_mantle_layers):
+
+        elif i < (num_core_layers + num_mantle_layers):
 
             density_layers[i]=(rock.evaluate(['density'], Pressure_layers[i]*ToPa, 300.))
 
             mass_layers[i] = mantle_mass/num_mantle_layers
-
             radius_layers[i] =  core_thickness_guess+ ((((i - num_core_layers) / num_mantle_layers) * mantle_thickness_guess))
 
         else:
@@ -166,10 +156,7 @@ def initialize_by_mass(*args):
                                ((float(
                                    i - num_core_layers - num_mantle_layers) / number_h2o_layers) * water_thickness_guess)
             mass_layers[i] = (water_mass / number_h2o_layers)
-            #Volume_out = 4. * np.pi / 3 * pow(radius_layers[i] , 3)
-            #Volume_in = 4. * np.pi / 3 * pow(radius_layers[i - 1] , 3)
-            density_layers[i] = 1000+i
-            # print(i,radius_layers[i],Volume_out-Volume_in,mass_layers[i],density_layers[i])
+            density_layers[i] = ice.evaluate(['density'], Pressure_layers[i]*ToPa, 300.)
 
     mass_update = np.zeros(num_layers)
 
@@ -178,16 +165,18 @@ def initialize_by_mass(*args):
 
     mass_layers = mass_update
 
-    #mass_layers[-1] = mass_planet * Earth_mass
     radius_layers[-1] = radius_planet*6371e3
-
-
     keys = ['mass','radius', 'density', 'temperature', 'gravity', 'pressure', \
-            'alpha', 'cp', 'Vphi''Vp', 'Vs', 'K']
+            'alpha', 'cp']
 
+    for i in range(len(density_layers)):
+        if np.isnan(density_layers[i])==True:
+            print("There is a nan in the initial density")
+            print(Pressure_layers[i],Temperature_layers[i])
+            sys.exit()
 
     return dict(zip(keys, [mass_layers, radius_layers,density_layers, Temperature_layers, gravity_layers, Pressure_layers,
-                           alpha, cp, Vphi, Vp, Vs, K]))
+                           alpha, cp]))
 
 def compress_mass(*args):
     """
@@ -226,7 +215,6 @@ def compress_mass(*args):
     verbose = args[5]
     n_iterations = 1
     max_iterations = 25
-    mantle_pot_temp = structural_params[7]
 
     old_r = [10  for i in range(len(Planet['mass']))]
     converge = False
@@ -237,32 +225,11 @@ def compress_mass(*args):
         if n_iterations>1:
             converge,old_r = minphys.check_convergence(Planet['density'],old_r)
 
-        for i in range(len(Planet['radius'])-1)[::-1]:
-
-            if Planet['temperature'][i]>7000:
-                Planet['temperature'][i] = 6900
-            if Planet['temperature'][i]<1700 and i < layers[1]:
-                Planet['temperature'][i] = 1710
-
-            if Planet['temperature'][i] < mantle_pot_temp and i < layers[0]+layers[1]:
-                Planet['temperature'][i] = mantle_pot_temp
-            if Planet['pressure'][i]/10/1000 >2700:
-                Planet['pressure'][i] =2650*10*1000.
-            if Planet['pressure'][i]/10/1000<10 and i < layers[1]:
-                Planet['pressure'][i] = 10.000001*10*1000
-            if Planet['pressure'][i]/10/1000 > 11.5 and Planet['temperature'][i] < 1700 and i > layers[1] and  i < layers[0]+layers[1]:
-                Planet['temperature'][i] = 1710
-
-
         Planet['density'] = minphys.get_rho(Planet,grids,Core_wt_per,layers)
-
-        Planet['radius'] = minphys.get_radius(Planet, layers)
-
         Planet['gravity'] = minphys.get_gravity(Planet,layers)
-
-        Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
-
         Planet['pressure'] = minphys.get_pressure(Planet,layers)
+        Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
+        Planet['radius'] = minphys.get_radius(Planet, layers)
 
         n_iterations+=1
 

@@ -47,7 +47,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
     get_phases = compositional_params[9]
 
-    use_grids = compositional_params[-1]
+    use_grids = compositional_params[10]
     #Run fine mesh grid
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,[structure_params[0],structure_params[1],structure_params[2]],filename,verbose,get_phases])
     grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
@@ -65,12 +65,16 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
         water_grid = []
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,[structure_params[3],structure_params[4],structure_params[5]],filename,verbose,False])
     grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
-    core_grid = functions.make_core_grid(Core_wt_per)
+
+    if radius_planet > 1.5 and core_mass_frac >0.15:
+        core_grid = functions.make_core_grid(compositional_params,True)
+    else:
+        core_grid = functions.make_core_grid(compositional_params,False)
 
     grids = [grids_low,grids_high,core_grid,water_grid]
     Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+    get_phases = compositional_params[9]
 
-    Planet['mass'] = minphys.get_mass(Planet,layers)
     Planet['phase_names'] = names
     Planet['phases'], Planet['phase_names'] = functions.get_phases(Planet, grids, layers, get_phases)
 
@@ -127,7 +131,15 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,[structure_params[3],structure_params[4],structure_params[5]],filename,verbose,False])
     grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
 
-    core_grid = functions.make_core_grid(Core_wt_per)
+    if mass_planet < 5 and core_mass_frac < 0.5:
+        core_grid = functions.make_core_grid(compositional_params,False)
+    else:
+        if Mantle_wt_per.get('FeO') < 5:
+            core_grid = functions.make_core_grid(compositional_params,False)
+        else:
+            core_grid = functions.make_core_grid(compositional_params,True)
+
+
     grids = [grids_low,grids_high,core_grid,water_grid]
 
     Planet = functions.find_Planet_mass(mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
