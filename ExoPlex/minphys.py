@@ -681,6 +681,12 @@ def get_temperature(Planet,grids,structural_parameters,layers):
 
         temperatures_water = [math.exp(i)*Water_potential_temp for i in gradient_water][::-1]
 
+        for i in range(len(alpha_mant))[::-1]:
+            if i < len(alpha_mant)-1:
+                if alpha_mant[i] > 3*alpha_mant[i+1]:
+                    dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
+                    alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
+
         grav_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], gravity_mantle[::-1], k=5)
         spec_heat_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], spec_heat_mantle[::-1], k=5)
         alpha_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], alpha_mant[::-1], k=5)
