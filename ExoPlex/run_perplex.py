@@ -41,25 +41,24 @@ def run_perplex(*args):
     Mantle_wt_per = args[0]
     compositional_params = args[1]
 
-    structure_params = args[2]
+    structure_values = args[2]
 
-    FeMg = compositional_params[1]
-    SiMg = compositional_params[2]
-    CaMg = compositional_params[3]
-    AlMg = compositional_params[4]
-    mol_frac_Fe_mantle = compositional_params[5]
+    FeMg = compositional_params.get('FeMg')
+    SiMg = compositional_params.get('SiMg')
+    CaMg = compositional_params.get('CaMg')
+    AlMg = compositional_params.get('AlMg')
+    wt_frac_FeO_wanted = compositional_params.get('wt_frac_FeO_wanted')
 
-    wt_frac_Si_core = compositional_params[6]
-    use_grids = compositional_params[10]
+    use_grids = compositional_params.get('use_grids')
 
     filename = args[3]
     verbose = args[4]
     UMLM = args[5]
 
 
-    Pressure_range_mantle = structure_params[0]
-    Temperature_range_mantle = structure_params[1]
-    resolution = structure_params[2]
+    Pressure_range_mantle = structure_values[0]
+    Temperature_range_mantle = structure_values[1]
+    resolution = structure_values[2]
 
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
@@ -68,7 +67,7 @@ def run_perplex(*args):
 
     solfileparamsString0 = '_' + str(round(SiMg, 3)) + '_' + str(round(FeMg, 3)) + '_' + str(
         round(CaMg, 3)) + '_' + str(round(AlMg, 3)) \
-                           + '_' + str(round(mol_frac_Fe_mantle, 3)) + '_' + str(round(wt_frac_Si_core, 3))
+                           + '_' + str(round(wt_frac_FeO_wanted, 3))
 
     # changes periods to commas
     solfileparamsString = solfileparamsString0.replace('.', ',')

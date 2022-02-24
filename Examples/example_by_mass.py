@@ -17,10 +17,13 @@ Temperature_range_mantle_UM = '1600 3500'
 Pressure_range_mantle_LM = '1250000 40000000'
 Temperature_range_mantle_LM = '1700 7000'
 
-core_rad_frac_guess = 0.5
-water_rad_frac_guess = 0.1
 water_potential_temp = 300.
 
+comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','wt_frac_Si_core',
+                          'wt_frac_O_core','wt_frac_S_core','wt_frac_H_core', 'combine_phases','use_grids','conserve_oxy']
+struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
+                         'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
+                         'Mantle_potential_temp','water_potential_temp']
 combine_phases = True
 use_grids = True
 verbose = True
@@ -50,7 +53,7 @@ if __name__ == "__main__":
 
     #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
     wt_frac_FeO_wanted = 0. #by mass
-    Conserve_oxy = False
+    conserve_oxy = False
 
     #Now we can mix various elements into the core or mantle
     wt_frac_Si_core = 0. #by mass <1, note if you conserve oxygen this is calculated for you
@@ -80,17 +83,17 @@ if __name__ == "__main__":
 
 
 
-    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
-                          wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids,Conserve_oxy]
+    compositional_params = dict(zip(comp_keys,[wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
+                          wt_frac_O_core,wt_frac_S_core, combine_phases,use_grids,conserve_oxy]))
 
     if use_grids == True:
         filename = exo.functions.find_filename(compositional_params,verbose)
     else:
         filename=''
 
-    structure_params =  [Pressure_range_mantle_UM,Temperature_range_mantle_UM,resolution_UM,
+    structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM,Temperature_range_mantle_UM,resolution_UM,
                          Pressure_range_mantle_LM, Temperature_range_mantle_LM, resolution_LM,
-                         core_rad_frac_guess,Mantle_potential_temp,water_rad_frac_guess,water_potential_temp]
+                                              Mantle_potential_temp,water_potential_temp]))
 
 
     layers = [num_mantle_layers,num_core_layers,number_h2o_layers]
@@ -114,11 +117,12 @@ if __name__ == "__main__":
     #Planet.get('alpha') = list of values of thermal expansivity points from calculation (1/K)
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
 
+    print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
     print("Radius = ", '%.5f'%(Planet['radius'][-1]/6371e3), "Earth radii")
     print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
-    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1]))
-    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1]))
+    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
+    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
     print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]//1e4), "GPa")
     print("CMB Temperature = " ,'%.2f' % (Planet['temperature'][num_core_layers]), "K")
     print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))

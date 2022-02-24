@@ -50,14 +50,13 @@ def initialize_by_mass(*args):
     num_mantle_layers, num_core_layers, number_h2o_layers = args[3]
     core_mass_frac = args[4]
     core_grid = args[5][2]
-    water_grid = args[5]
-    wt_frac_water, FeMg, SiMg, CaMg, AlMg, mol_frac_Fe_mantle, wt_frac_Si_core, \
-     wt_frac_O_core, wt_frac_S_core,combine_phases,use_grids,conserve_oxy = compositional_params
 
-    core_rad_frac = structural_params[6]
-    Mantle_potential_temp = structural_params[7]
-    water_rad_frac = compositional_params[0]
-    water_potential_temp = structural_params[9]
+    wt_frac_water = compositional_params.get('wt_frac_water')
+    Mantle_potential_temp = structural_params.get('Mantle_potential_temp')
+    water_potential_temp = structural_params.get('water_potential_temp')
+    core_rad_frac = 0.5
+    water_rad_frac = 0.1
+
 
     Radius_planet_guess = pow(mass_planet*5.97e24 / 5500. / (4*np.pi/3.),1/3.)/6371e3
 

@@ -15,10 +15,12 @@ Temperature_range_mantle_UM = '1400 3000'
 Pressure_range_mantle_LM = '1000000 7500000'
 Temperature_range_mantle_LM = '2000 5000'
 
-core_rad_frac_guess = 0.5
-water_rad_frac_guess = 0.
-
-combine_phases = False
+comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','wt_frac_Si_core',
+                          'wt_frac_O_core','wt_frac_S_core', 'combine_phases','use_grids','conserve_oxy']
+struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
+                         'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
+                         'Mantle_potential_temp','water_potential_temp']
+combine_phases = True
 use_grids = True
 verbose = True
 
@@ -46,8 +48,8 @@ if __name__ == "__main__":
     water_potential_temp = 300.
 
     #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
-    wt_frac_FeO_wanted = 0.08 #by mass
-    Conserve_oxy = False
+    wt_frac_FeO_wanted = 0. #by mass
+    conserve_oxy = False
 
     #Now we can mix various elements into the core or mantle
     wt_frac_Si_core = 0.0 #by mass <1
@@ -71,16 +73,18 @@ if __name__ == "__main__":
 
 
 
-    compositional_params = [wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
-                          wt_frac_O_core,wt_frac_S_core,combine_phases,use_grids,Conserve_oxy]
+    compositional_params = dict(zip(comp_keys,[wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
+                          wt_frac_O_core,wt_frac_S_core, combine_phases,use_grids,conserve_oxy]))
+
 
     if use_grids == True:
         filename = exo.functions.find_filename(compositional_params,verbose)
     else:
         filename=''
-    structure_params = [Pressure_range_mantle_UM, Temperature_range_mantle_UM, resolution_UM,
-                        Pressure_range_mantle_LM, Temperature_range_mantle_LM, resolution_LM,
-                        core_rad_frac_guess, Mantle_potential_temp, water_rad_frac_guess, water_potential_temp]
+
+    structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM,Temperature_range_mantle_UM,resolution_UM,
+                         Pressure_range_mantle_LM, Temperature_range_mantle_LM, resolution_LM,
+                                              Mantle_potential_temp,water_potential_temp]))
 
 
     layers = [num_mantle_layers,num_core_layers,number_h2o_layers]
@@ -92,6 +96,9 @@ if __name__ == "__main__":
 
 
     Planet = exo.run_planet_radius(Radius_planet,compositional_params,structure_params,layers,filename,verbose)
+
+    #check to see if solution works (P goes up with depth etc.)
+    exo.functions.check(Planet)
 
     #Planet is a dictionary containing many parameters of interest:
     #Planet.get('radius') = list of the radial points from calculation (m)
@@ -106,7 +113,7 @@ if __name__ == "__main__":
 
     print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
-    print("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
+    print("Radius = ", '%.5f'%(Planet['radius'][-1]/6371e3), "Earth radii")
     print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
     print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
     print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))

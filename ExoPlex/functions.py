@@ -25,14 +25,14 @@ def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
 def get_Si_core_w_FeO(compositional_params):
 
-    FeMg = compositional_params[1]
-    SiMg = compositional_params[2]
-    CaMg = compositional_params[3]
-    AlMg = compositional_params[4]
-    wt_fe_m = compositional_params[5]
-    wt_frac_Si_core = compositional_params[6]
+    FeMg = compositional_params.get('FeMg')
+    SiMg = compositional_params.get('SiMg')
+    CaMg = compositional_params.get('CaMg')
+    AlMg = compositional_params.get('AlMg')
+    wt_fe_m = compositional_params.get('wt_frac_FeO_wanted')
+    wt_frac_Si_core = compositional_params.get('wt_frac_Si_core')
 
-    conserve_oxy = compositional_params[11]
+    conserve_oxy = compositional_params.get('Conserve_oxy')
 
 
     if conserve_oxy == True and  wt_fe_m > 0:
@@ -80,16 +80,16 @@ def get_percents(compositional_params,verbose):
     core_mass_frac: float
         Mass of core divided by mass of planet
     """
-    FeMg = compositional_params[1]
-    SiMg = compositional_params[2]
-    CaMg = compositional_params[3]
-    AlMg = compositional_params[4]
-    wt_fe_m = compositional_params[5]
-    wt_frac_Si_core = compositional_params[6]
-    wt_frac_O_core = compositional_params[7]
-    wt_frac_S_core = compositional_params[8]
-    conserve_oxy = compositional_params[11]
-    use_grids = compositional_params[10]
+    FeMg = compositional_params.get('FeMg')
+    SiMg = compositional_params.get('SiMg')
+    CaMg = compositional_params.get('CaMg')
+    AlMg = compositional_params.get('AlMg')
+    wt_fe_m = compositional_params.get('wt_frac_FeO_wanted')
+    wt_frac_Si_core = compositional_params.get('wt_frac_Si_core')
+    wt_frac_O_core = compositional_params.get('wt_frac_O_core')
+    wt_frac_S_core = compositional_params.get('wt_frac_S_core')
+    conserve_oxy = compositional_params.get('conserve_oxy')
+    use_grids = compositional_params.get('use_grids')
 
     MgSi = 1./SiMg
     FeSi = FeMg*MgSi
@@ -238,9 +238,8 @@ def get_percents(compositional_params,verbose):
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
-def make_core_grid(compositional_params,use_high,verbose):
+def make_core_grid(use_high,verbose):
 
-    wt_per_Fe = compositional_params[5]
     if use_high == True:
         if verbose == True:
             print("Using coarser high FeO Core grid: liquid_iron_grid_highfeo.dat")
@@ -260,7 +259,6 @@ def make_core_grid(compositional_params,use_high,verbose):
             num_rows = num_rows-1
             start+=1
 
-    header = temp_file[0].strip('\n').split(',')
     start = 1
 
     data = temp_file[start:]
@@ -294,7 +292,6 @@ def make_water_grid():
             num_rows = num_rows-1
             start+=1
 
-    header = temp_file[0].strip('\n').split(',')
     start = 1
 
     data = temp_file[start:]
@@ -453,8 +450,7 @@ def get_phases(Planet,grids,layers,combine_phases):
 
     mantle_pressures = Planet['pressure'][num_core_layers:(num_core_layers+num_mantle_layers)]
     mantle_temperatures = Planet['temperature'][num_core_layers:(num_core_layers+num_mantle_layers)]
-    core_pressures = Planet['pressure']
-    core_temperatures = Planet['temperature']
+
     P_points_UM = []
     T_points_UM = []
     for i in range(len(mantle_pressures)):
@@ -701,7 +697,6 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     from scipy.optimize import brentq
     args = [radius_planet, structure_params, compositional_params, layers, grids, Core_wt_per, core_mass_frac, verbose]
     den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
-    mass_guess = den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3)) / 5.97e24
 
     #Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.3*mass_guess, args=args, xtol=1e-5)
     Mass = brentq(calc_planet_radius, .2,  13.5, args=args, xtol=1e-5)
@@ -776,7 +771,6 @@ def find_filename(compositional_params,verbose):
     mantle_wt_percents = get_percents(compositional_params,verbose)[1]
 
     mol_Mg = mantle_wt_percents.get('MgO')/(mMg + mO)
-    FeMg = round((mantle_wt_percents.get('FeO')/(mFe+mO))/mol_Mg,4)
     SiMg = round((mantle_wt_percents.get('SiO2')/(mSi+2*mO))/mol_Mg,4)
     CaMg = round((mantle_wt_percents.get('CaO')/(mCa+mO))/mol_Mg,4)
     AlMg =round((2.*mantle_wt_percents.get('Al2O3')/(2.*mAl+3.*mO))/mol_Mg,4)
