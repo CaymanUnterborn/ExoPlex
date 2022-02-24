@@ -136,7 +136,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     else:
         rho_layers= np.append(core_data,mantle_data)
     for i in range(sum(layers)-1)[::-1]:
-        if rho_layers[i+1] > rho_layers[i] and Pressure_layers[i]>22e6:
+        if rho_layers[i+1] > rho_layers[i]:
             drhodP = (rho_layers[i+1]-rho_layers[i+2])/(Pressure_layers[i+1]-Pressure_layers[i+2])
             rho_layers[i] =rho_layers[i+1] + (Pressure_layers[i]-Pressure_layers[i+1])* drhodP
 
@@ -202,7 +202,6 @@ def get_water_rho(Pressure,Temperature,grids):
     Water_density = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['density'],
     (Pressure, Temperature), method = 'linear')
 
-
     for i in range(len(Water_density)):
         if np.isnan(Water_density[i]) == True and Pressure[i] >= min(grids[3]['pressure']) and Temperature[i] >= min(grids[3]['temperature']):
             den_noT = rock.evaluate(['density'], Pressure[i]*ToPa, 300)[0]
@@ -210,7 +209,6 @@ def get_water_rho(Pressure,Temperature,grids):
             Water_density[i] = den_noT/corr
 
         elif np.isnan(Water_density[i]) == True:
-
             print("outside of water grid")
             print(Water_density[i])
             print(Pressure[i]/10/1000, "GPa",Temperature[i],"K")
@@ -671,9 +669,13 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         spec_heat_water = get_water_Cp(P_points_water,T_points_water,grids)
         alpha_water= get_water_alpha(P_points_water,T_points_water,grids)
 
+
+
         grav_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], gravity_water[::-1],k=3)
         spec_heat_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], spec_heat_water[::-1],k=3)
         alpha_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], alpha_water[::-1],k=3)
+
+
 
         adiabat_water = lambda p, x: alpha_func_water(x) * grav_func_water(x) / spec_heat_func_water(x)
 
@@ -683,7 +685,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
 
         for i in range(len(alpha_mant))[::-1]:
             if i < len(alpha_mant)-1:
-                if alpha_mant[i] > 3*alpha_mant[i+1]:
+                if alpha_mant[i] > 2*alpha_mant[i+1]:
                     dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
                     alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
 

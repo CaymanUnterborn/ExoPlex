@@ -11,14 +11,15 @@ import numpy as np
 
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
-Pressure_range_mantle_UM = '1000 1400000'
-Temperature_range_mantle_UM = '1400 3000'
+Pressure_range_mantle_UM = '1 1400000'
+Temperature_range_mantle_UM = '1600 3500'
 
-Pressure_range_mantle_LM = '1000000 7500000'
-Temperature_range_mantle_LM = '2200 5000'
+Pressure_range_mantle_LM = '1250000 40000000'
+Temperature_range_mantle_LM = '1700 7000'
 
 core_rad_frac_guess = 0.5
-water_rad_frac_guess = 0.
+water_rad_frac_guess = 0.1
+water_potential_temp = 300.
 
 combine_phases = True
 use_grids = True
@@ -52,9 +53,9 @@ if __name__ == "__main__":
     Conserve_oxy = False
 
     #Now we can mix various elements into the core or mantle
-    wt_frac_Si_core = 0.0 #by mass <1, note if you conserve oxygen this is calculated for you
-    wt_frac_O_core = 0.0 #by mass
-    wt_frac_S_core = 0.0 #by mass
+    wt_frac_Si_core = 0. #by mass <1, note if you conserve oxygen this is calculated for you
+    wt_frac_O_core = 0. #by mass
+    wt_frac_S_core = 0. #by mass
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -63,13 +64,13 @@ if __name__ == "__main__":
     #These are input as number of T, P points. 50 50 = 2500 grid points, which takes about
     #5 minutes to calculate. Lower mantle resolution does not need to be higher since it's
     #mostly ppv.
-    resolution_UM = '50 50'
-    resolution_LM = '20 20'
+    resolution_UM = '25 75'
+    resolution_LM = '75 75'
 
     #lastly we need to decide how many layers to put in the planet. This is the resolution of
     #the mass-radius sampling.
-    num_mantle_layers = 500
-    num_core_layers = 600
+    num_mantle_layers = 300
+    num_core_layers = 300
 
     Output_radii = []
     Output_mass = []
@@ -97,8 +98,10 @@ if __name__ == "__main__":
     #This is where we actually run the planet. First PerPlex grids of mineralogy, density,
     #Cp and alpha are calculated and stored in the Solutions folder. If the file already exists
     #(in name, not necessarily in composition), then PerPlex is not run again.
+    Planet = exo.run_planet_mass(Mass_planet, compositional_params, structure_params, layers, filename, verbose)
 
-    Planet = exo.run_planet_mass(Mass_planet,compositional_params,structure_params,layers,filename, verbose)
+    #check to see if solution works (P goes up with depth etc.)
+    exo.functions.check(Planet)
 
     #Planet is a dictionary containing many parameters of interest:
     #Planet.get('radius') = list of the radial points from calculation (m)
@@ -111,12 +114,11 @@ if __name__ == "__main__":
     #Planet.get('alpha') = list of values of thermal expansivity points from calculation (1/K)
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
 
-    print()
     print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
-    print("Radius = ", '%.3f'%(Planet['radius'][-1]/6371e3), "Earth radii")
+    print("Radius = ", '%.5f'%(Planet['radius'][-1]/6371e3), "Earth radii")
     print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
-    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
-    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
+    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers]/Planet['mass'][-1]))
+    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers]/Planet['radius'][-1]))
     print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]//1e4), "GPa")
     print("CMB Temperature = " ,'%.2f' % (Planet['temperature'][num_core_layers]), "K")
     print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))

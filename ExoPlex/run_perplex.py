@@ -61,10 +61,10 @@ def run_perplex(*args):
     Temperature_range_mantle = structure_params[1]
     resolution = structure_params[2]
 
-
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
              + ' ' + str(Mantle_wt_per.get('Al2O3'))+ ' ' + str(0.) #last value included for Na
+
 
     solfileparamsString0 = '_' + str(round(SiMg, 3)) + '_' + str(round(FeMg, 3)) + '_' + str(
         round(CaMg, 3)) + '_' + str(round(AlMg, 3)) \
@@ -121,14 +121,12 @@ def run_perplex(*args):
     component6 = 'NA2O'
 
     if os.path.isfile(solutionFileNameMan+'.arf')==True:
-        os.remove(solutionFileNameMan+'.arf')
-        os.remove(solutionFileNameMan+'.blk')
-        os.remove(solutionFileNameMan+'.dat')
-        os.remove(solutionFileNameMan+'.plt')
-        os.remove(solutionFileNameMan+'.tof')
-
-        os.remove(solutionFileNameMan + '_VERTEX_options.txt')
-        os.remove(solutionFileNameMan + '_WERAMI_options.txt')
+        os.remove(solutionFileNameMan + '.arf')
+        os.remove(solutionFileNameMan + '.blk')
+        os.remove(solutionFileNameMan + '.dat')
+        os.remove(solutionFileNameMan + '.plt')
+        os.remove(solutionFileNameMan + '.tof')
+        os.remove(solutionFileNameMan + '_seismic_data.txt')
         os.remove(solutionFileNameMan + '_auto_refine.txt')
 
     p = pe.spawn(PerPlex_path+"/./build")
@@ -140,6 +138,9 @@ def run_perplex(*args):
     p.sendline(PerPlex_path + '/perplex_options.dat')
     # Transform them (Y/N)?
     p.sendline('N')
+    #Specify computational mode:
+    p.sendline('2')
+
     # Calculations with saturated components (Y/N)?
     p.sendline('N')
     # Use chemical potentials, activities or fugacities as independent variables (Y/N)?
@@ -152,9 +153,6 @@ def run_perplex(*args):
     p.sendline(component5)  # AL2O3
     p.sendline(component6)  # NA2O
     p.sendline('')
-    # Specify computational mode:
-
-    p.sendline('2')
 
     # Make one dependent on the other, e.g., as along a geothermal gradient (y/n)?
     p.sendline('N')
@@ -223,18 +221,13 @@ def run_perplex(*args):
     p = pe.spawn(PerPlex_path+"/./werami",timeout=None)
 
 
+
     p.sendline(solutionFileNameMan)
     # select 2D grid
     p.sendline('2')
     # Below, select parameters density, alpha, cp.
     # Ns for no calculating individual phase properties
     p.sendline('2')
-    p.sendline('N')
-    p.sendline('12')
-    p.sendline('N')
-    p.sendline('13')
-    p.sendline('N')
-    p.sendline('14')
     p.sendline('N')
     p.sendline('4')
     p.sendline('N')
@@ -258,7 +251,7 @@ def run_perplex(*args):
     p.sendline('7')
     p.sendline('Wad')  # 5
     p.sendline('7')
-    p.sendline('Ring')  # 6  #if statement about no FeO or some shit
+    p.sendline('Ring')  # 6
     p.sendline('7')
     p.sendline('Opx')  # 7
     p.sendline('7')
@@ -290,8 +283,9 @@ def run_perplex(*args):
 
     p.sendline('0')
     # Change default variable range (y/n)?
-    p.sendline('N')
-
+    p.sendline('Y')
+    p.sendline(Temperature_range_mantle)
+    p.sendline(Pressure_range_mantle)
     # Enter number of nodes in the T(K)     and P(bar)   directions:
 
     p.sendline(resolution)
@@ -313,9 +307,7 @@ def run_perplex(*args):
     os.remove(solutionFileNameMan+'.dat')
     os.remove(solutionFileNameMan+'.plt')
     os.remove(solutionFileNameMan+'.tof')
-
-    os.remove(solutionFileNameMan+'_VERTEX_options.txt')
-    os.remove(solutionFileNameMan+'_WERAMI_options.txt')
+    os.remove(solutionFileNameMan+'_seismic_data.txt')
     os.remove(solutionFileNameMan+'_auto_refine.txt')
 
     filename = '../Calc_Solutions/'+filename

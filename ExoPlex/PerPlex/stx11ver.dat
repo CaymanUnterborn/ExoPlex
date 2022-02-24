@@ -1,11 +1,15 @@
 
 | Comments are indicated by the | character.
 
+| Between 5/13/2019 and 1/21/2021 the spin configurational entropy per iron atom in this file
+| was computed incorrectly as -R (1/5 ln(1/5) + 4/5 ln (4/5)) rather than -R ln(1/5)
+| as in this version and the original data. JADC, 1/21/21.
+
 | This file contains thermodynamic data from:
 
 | Stixrude, L. and Lithgow-Bertelloni, C. (2011), 
-| Thermodynamics of mantle minerals Ð II. Phase equilibria. 
-| Geophysical Journal International, 184: 1180Ð1213. 
+| Thermodynamics of mantle minerals – II. Phase equilibria. 
+| Geophysical Journal International, 184: 1180–1213. 
 | doi: 10.1111/j.1365-246X.2010.04890.x
 
 | formatted for Perple_X 6.6+.                                       
@@ -444,3 +448,4 @@ G0 = -242146 S0 = -2 V0 = -1.2264
 c1 = 1794442. c2 = 4.9376 c3 = 454.1592 c4 = 1.53047 c5 = 1.7217 c6 = -.5731E-1 c7 = 13.38  
 m0 = 590000 m1 = 1.44673  
 end
+
