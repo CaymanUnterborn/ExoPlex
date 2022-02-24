@@ -645,8 +645,8 @@ def get_temperature(Planet,grids,structural_parameters,layers):
 
     depths = radii[-1] - radii
 
-    Mantle_potential_temp = structural_parameters[7]
-    Water_potential_temp = structural_parameters[9]
+    Mantle_potential_temp = structural_parameters.get('Mantle_potential_temp')
+    Water_potential_temp = structural_parameters.get('Mantle_potential_temp')
     depths_mantle = depths[num_core_layers:num_core_layers+num_mantle_layers]
     gravity_mantle = gravity[num_core_layers:num_core_layers+num_mantle_layers]
     depths_mantle = depths[num_core_layers:num_core_layers + num_mantle_layers]
