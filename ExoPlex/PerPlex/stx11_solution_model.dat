@@ -1,10 +1,10 @@
-011 DO NOT DELETE THIS LINE
+689 DO NOT DELETE THIS LINE
 
 | Solution models consistent with:
 
 | Stixrude, L. and Lithgow-Bertelloni, C. (2011), 
-| Thermodynamics of mantle minerals Ð II. Phase equilibria. 
-| Geophysical Journal International, 184: 1180Ð1213. 
+| Thermodynamics of mantle minerals – II. Phase equilibria. 
+| Geophysical Journal International, 184: 1180–1213. 
 | doi: 10.1111/j.1365-246X.2010.04890.x
 
 | the solution model names are:
@@ -122,7 +122,7 @@ z(B,fe) = 1/8 herc
 3 4.                                  3 species, site multiplicity = 4.
 z(B,mg) = 3/4 sp
 z(B,fe) = 3/4 herc
-end_of_model                             
+end_of_model
                       --------------------------------------------------------
 begin_model                
                                   | olivine solution
@@ -238,6 +238,8 @@ alpha(cen)    1.0    0.0    0.0
 alpha(cts)    3.5    0.0    0.0
 end_van_laar_sizes
 
+reach_increment 3
+
 end_of_model                        
                       --------------------------------------------------------
 begin_model                
@@ -269,127 +271,143 @@ end_of_model
 begin_model                
                                       Garnet solution without Fe-majorite (Fe3MgSiSi3O12) and
                                       Ca-majorite (Ca3MgSiSi3O12). See Gt_maj below for the 
-                                      complete model                                
+                                      complete model
 
-Gt                                                                               
-2                                     model type: Margules, 1 dependent endmember
-5                                     # of endmembers
-gr   alm  maj  py jmaj  
-        
-0  0  0  0  0              | endmember flags
+                                      reformulated as 688 standard format. JADC, 10/19
+
+Gt
+
+688                                | model type: 688 format standard model
+
+1                                  | number of polytopes
+1                                  | number of simplices
+5                                  | number of vertices on each simplex
+                                   | endmembers on the vertices
+gr   alm  maj  py jmaj
+
 0. 1. .1   0               | range and resolution for X(gr), imod = 0 -> cartesian subdivision
 0. 1. .1   0               | range and resolution for X(alm), imod = 0 -> cartesian subdivision
 0. 1. .1   0               | range and resolution for X(maj), imod = 0 -> cartesian subdivision
 0. 1. .1   0               | range and resolution for X(py), imod = 0 -> cartesian subdivision
 
-begin_excess_function                                                
-W(gr maj)  58d3   0. 0. 
-W(gr py)   30d3   0. 0. 
-W(py maj)  21.3d3 0. 0.
+begin_excess_function
+W(gr maj)  58d3
+W(gr py)   30d3
+W(py maj)  21.3d3
 end_excess_function 
 
-3                                 | 3 sites for configurational entropy model
+3                                 | 3 site configurational entropy model
 
-5 3.                              | A-site, 5 independent species,
-z(A,ca) = 1 gr
-z(A,fe) = 1 alm
-z(A,na) = 2/3 jmaj
-z(A,mg) = 1 py + 1 maj
+A                                 | site name
+5 3 3                             | number of species, effective multiplicity, true multiplicity
+z(Ca,A) = 1 gr
+z(Fe,A) = 1 alm
+z(Na,A) = 2/3 jmaj
+z(Mg,A) = 1 py + 1 maj
+z(Al,A) = 1/3 jmaj
 
-2 1.                              | 2 species, B1 site multiplicity 1
-z(B1,Mg) = 1 maj 
+B1                                | site name
+2 1 1                             | number of species, effective multiplicity, true multiplicity
+z(Mg,B1) = 1 maj 
+z(Al,B1) = 1 gr  + 1 py    + 1 alm + 1 jmaj
 
-2 1.                              | 2 species, B2 site multiplicity 1
-z(B1,Si) = 1 maj + 1 jmaj 
+B2                                | site name
+2 1 1                             | number of species, effective multiplicity, true multiplicity
+z(Si,B2) = 1 maj + 1 jmaj
+z(Al,B2) = 1 gr  + 1 py    + 1 alm
+
+[Si3O12]                                    | formula suffix, enter "none" for no suffix.
 
 end_of_model       
                       --------------------------------------------------------
 begin_model                
                                       Garnet solution with Fe-majorite (Fe3MgSiSi3O12) and
                                       Ca-majorite (Ca3MgSiSi3O12), the use of these endmembers
-                                      is necessary to reproduce the calculations in Stixrude
-                                      & Lithgow-Bertelloni (2011). But these endmembers slow
-                                      calculations substantially and do not result in
-                                      significantly different velocity profiles.                                 
+                                      appear to be necessary to reproduce the Stixrude
+                                      & Lithgow-Bertelloni (2011) calculations. 
 
-Gt_maj                                                                               
-5                                     model type: Margules, 1 dependent endmember
-7                                     # of endmembers
-cmaj fmaj   gr   alm  maj  py jmaj  
+                                      reformulated as an irregular prismatic model, JADC, 5/18
 
-2                          | dependent endmembers 
+                                      reformulated as 688 standard format. JADC, 10/19
+
+                                                      A            B1/B2
+                                                     ____________________
+
+                                      Multiplicity    3            2
+                                                     ____________________
+                   prismatic vertex:
+                                        py            Mg           AlAl   independent   
+                                        alm           Fe           AlAl   independent     
+                                        gr            Ca           AlAl   independent
+
+                                        maj           Mg           MgSi   independent   
+                                        fmaj          Fe           MgSi   dependent   
+                                        cmaj          Ca           MgSi   dependent   
+                   orphan vertex:
+                                        jmaj          Na2/3Al1/3   AlSi   independent (orphan)
+
+Gt_maj
+
+688                                | model type: 688 format standard model
+
+2                                  | number of polytopes
+                                   | polytope names and composite composition space subdivision schemes 
+[jmaj]   0    1   .1  0            | subdivision range for X(1) = M-free
+[~jmaj]  by difference             | = [M][Al,MgSi], M = Mg,Fe,Ca
+                                   | ----------------------------
+                                   | Polytope 1 - 1 simplex
+1                                  | number of simplices, [Na2/3Al1/3][AlSi]
+1                                  | number of vertices on each simplex
+jmaj                               | endmembers on the vertices
+                                   | ----------------------------
+                                   | Polytope 2 - 3x2 simplices
+2                                  | number of simplices
+3  2                               | number of vertices on each simplex
+                                   | endmembers on the vertices
+cmaj   fmaj   maj
+gr     alm    py
+                                   | First 3-simplex
+X_Ca,A    0. 1. .1   0             | range and resolution for X(Ca,A), imod = 0 -> cartesian subdivision
+X_Fe,A    0. 1. .1   0             | range and resolution for X(Fe,A), imod = 0 -> cartesian subdivision
+X_Mg,A    by difference 
+                                   | Second 2-simplex
+X_MgSi,B  0. 1. .1   0             | range and resolution for X(1-Ts,B), imod = 0 -> cartesian subdivision
+X_AlAl,B  by difference
+
+begin_dependent_endmembers
 fmaj = 1 maj + 1 alm - 1 py
 cmaj = 1 maj + 1 gr  - 1 py
-        
-0  0  0  0  0  0  0        | endmember flags
-0. .4 .1   0               | X(cmaj)
-0. .4 .1   0               | X(fmaj)
-0. 1. .1   0               | range and resolution for X(gr), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(alm), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(maj), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(py), imod = 0 -> cartesian subdivision
+end_dependent_endmembers
 
-begin_excess_function                                                
-W(gr maj)  58d3   0. 0. 
-W(gr py)   30d3   0. 0. 
-W(py maj)  21.3d3 0. 0.
-end_excess_function 
+begin_excess_function
+W(gr maj)  58d3
+W(gr py)   30d3
+W(py maj)  21.3d3
+end_excess_function
 
-3                                 | 3 sites for configurational entropy model
+3                                 | 3 site configurational entropy model
 
-5 3.                              | A-site, 5 independent species,
-z(A,ca) = 1 gr
-z(A,fe) = 1 alm
-z(A,na) = 2/3 jmaj
-z(A,mg) = 1 py + 1 maj
+A                                 | site name
+5 3 3                             | number of species, effective multiplicity, true multiplicity
+z(Ca,A) = 1 gr
+z(Fe,A) = 1 alm
+z(Na,A) = 2/3 jmaj
+z(Mg,A) = 1 py + 1 maj
+z(Al,A) = 1/3 jmaj
 
-2 1.                              | 2 species, B1 site multiplicity 1
-z(B1,Mg) = 1 maj 
+B1                                | site name
+2 1 1                             | number of species, effective multiplicity, true multiplicity
+z(Mg,B1) = 1 maj 
+z(Al,B1) = 1 gr  + 1 py    + 1 alm + 1 jmaj
 
-2 1.                              | 2 species, B2 site multiplicity 1
-z(B1,Si) = 1 maj + 1 jmaj 
+B2                                | site name
+2 1 1                             | number of species, effective multiplicity, true multiplicity
+z(Si,B2) = 1 maj + 1 jmaj
+z(Al,B2) = 1 gr  + 1 py    + 1 alm
 
-end_of_model   
-                      --------------------------------------------------------
-begin_model                
-                                      Garnet solution with Ca-majorite (Ca3MgSiSi3O12)                                  
+[Si3O12]                                    | formula suffix, enter "none" for no suffix.
 
-Gt_cmaj                                                                               
-5                                     model type: Margules, 1 dependent endmember
-6                                     # of endmembers
-cmaj   gr   alm  maj  py jmaj  
-
-1                          | 1 dependent endmember 
-cmaj = 1 maj + 1 gr - 1 py
-        
-0  0  0  0  0  0           | endmember flags
-0. 1. .1   0               | X(cmaj)
-0. 1. .1   0               | range and resolution for X(gr), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(alm), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(maj), imod = 0 -> cartesian subdivision
-0. 1. .1   0               | range and resolution for X(py), imod = 0 -> cartesian subdivision
-
-begin_excess_function                                                
-W(gr maj)  58d3   0. 0. 
-W(gr py)   30d3   0. 0. 
-W(py maj)  21.3d3 0. 0.
-end_excess_function 
-
-3                                 | 3 sites for configurational entropy model
-
-5 3.                              | A-site, 5 independent species,
-z(A,ca) = 1 gr
-z(A,fe) = 1 alm
-z(A,na) = 2/3 jmaj
-z(A,mg) = 1 py + 1 maj
-
-2 1.                              | 2 species, B1 site multiplicity 1
-z(B1,Mg) = 1 maj 
-
-2 1.                              | 2 species, B2 site multiplicity 1
-z(B1,Si) = 1 maj + 1 jmaj 
-
-end_of_model       
+end_of_model
                       --------------------------------------------------------     
 begin_model                
 

@@ -3,8 +3,6 @@ import sys
 from scipy import interpolate
 
 from ExoPlex import planet as planet
-from ExoPlex import minphys as minphys
-
 ToPa = 100000.
 
 #constants, atomic masses
@@ -46,7 +44,6 @@ def get_Si_core_w_FeO(compositional_params):
         wt_frac_Si_core = .5*mols_fe_m*mSi / (FeMg*mFe + mols_fe_m*(.5*mSi - mFe))
 
         mol_frac_Fe_mantle = mols_fe_m/FeMg
-
 
         return(wt_frac_Si_core,mol_frac_Fe_mantle)
     elif wt_fe_m > 0:
@@ -92,6 +89,7 @@ def get_percents(compositional_params,verbose):
     wt_frac_O_core = compositional_params[7]
     wt_frac_S_core = compositional_params[8]
     conserve_oxy = compositional_params[11]
+    use_grids = compositional_params[10]
 
     MgSi = 1./SiMg
     FeSi = FeMg*MgSi
@@ -123,7 +121,7 @@ def get_percents(compositional_params,verbose):
                    [0., -1. * CaSi, 0., 0., 0., 0., -1. * CaSi, 0., 1., 0.],
                    [0., -1. * AlSi, 0., 0., 0., 0., -1. * AlSi, 0., 0., 1.],
                    [0., 0., 0. , 0. , -1. ,-1., -2. , 1. , -1., -1.5] ,
-          [mFe , mSi , mO, mS ,  mFe , mMg , mSi ,mO, mCa, mAl]])
+          [mFe , mSi , mO, mS , mFe , mMg , mSi ,mO, mCa, mAl]])
 
 
 
@@ -138,16 +136,18 @@ def get_percents(compositional_params,verbose):
     #in order Fe, Si, O, S in core
     Core_moles = Num_moles[:4]
 
+
     #in order Fe, Mg, Si, O, Ca, Al in mantle
     Mantle_moles = Num_moles[4:]
 
     for i in Core_moles:
-        if i <0:
-            print("You have a negative composition, therefore your chosen composition is not valid stoichiometrically" )
+        if i <-1*np.finfo(float).eps:
+            print("You have a negative core composition, therefore your chosen composition is not valid stoichiometrically" )
+            print(Core_moles)
             sys.exit()
     for i in Mantle_moles:
-        if i <0:
-            print("You have a negative composition, therefore your chosen composition is not valid stoichiometrically" )
+        if i <-1*np.finfo(float).eps:
+            print("You have a negative mantle composition, therefore your chosen composition is not valid stoichiometrically" )
             sys.exit()
     tot_moles_core = sum(Core_moles)
 
@@ -171,6 +171,7 @@ def get_percents(compositional_params,verbose):
         print("This is likely due to too low of an Fe/Mg and too high of a mantle FeO content")
         sys.exit()
 
+
     #Weight percents of mantle oxides
     #Weight percents assuming FeO, MgO, SiO2, CaO, Al2O3
 
@@ -180,6 +181,10 @@ def get_percents(compositional_params,verbose):
     Ca_moles_mant = Mantle_moles[4]
     Al_moles_mant = Mantle_moles[5]
 
+    if Si_moles_mant/Mg_moles_mant <0.5 or Si_moles_mant/Mg_moles_mant >2 and use_grids == True:
+        print("Using grids and have a mantle Si/Mg out of range of ExoPlex grids")
+        print("which are valid 0.5 <= Si/Mg <= 2")
+        sys.exit()
 
     FeO_mant_wt = Fe_moles_mant*(mFe+mO)/mass_of_Mantle
     MgO_mant_wt = Mg_moles_mant*(mMg+mO)/mass_of_Mantle
@@ -233,15 +238,17 @@ def get_percents(compositional_params,verbose):
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
-def make_core_grid(compositional_params,use_high):
+def make_core_grid(compositional_params,use_high,verbose):
 
     wt_per_Fe = compositional_params[5]
     if use_high == True:
-        print("Using coarser high FeO Core grid: liquid_iron_grid_highfeo.dat")
+        if verbose == True:
+            print("Using coarser high FeO Core grid: liquid_iron_grid_highfeo.dat")
         file = open('../Solutions_Small/liquid_iron_grid_highfeo.dat')
 
     else:
-        print("Using normal Core grid: liquid_iron_grid.dat")
+        if verbose == True:
+            print("Using normal Core grid: liquid_iron_grid.dat")
         file = open('../Solutions_Small/liquid_iron_grid.dat')
 
     temp_file = file.readlines()
@@ -388,7 +395,7 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         num_columns = len(temp_file[12].split())
 
         header = temp_file[12].strip('\n').split()
-        Phases = header[8:]
+        Phases = header[5:]
 
         for i in range(len(Phases)):
             Phases[i] = Phases[i].strip(",mo%")
@@ -400,18 +407,18 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
             columns = data[i].strip('\n').split()
             grid[i] = [float(j) for j in columns]
 
-        num_phases = len(grid[0][8:])
+        num_phases = len(grid[0][5:])
         phases_grid = np.zeros((num_rows, num_phases))
         for i in range(num_rows):
-            phases_grid[i] = grid[i][8:]
+            phases_grid[i] = grid[i][5:]
 
         temperature_grid = [row[0] for row in grid]
         pressure_grid = [row[1] for row in grid]
         density_grid = [row[2] for row in grid]
-        speed_grid = [[row[3], row[4], row[5]] for row in grid]
-        alpha_grid = [row[6] for row in grid]
-        cp_grid = [row[7] for row in grid]
-        phase_grid = [row[8:] for row in grid]
+        speed_grid = [[0, 0, 0] for row in grid]
+        alpha_grid = [row[3] for row in grid]
+        cp_grid = [row[4] for row in grid]
+        phase_grid = [row[5:] for row in grid]
 
 
 
@@ -696,7 +703,9 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
     mass_guess = den_guess * (4 / 3 * np.pi * pow(radius_planet * 6371e3, 3)) / 5.97e24
 
-    Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.3*mass_guess, args=args, xtol=1e-5)
+    #Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.3*mass_guess, args=args, xtol=1e-5)
+    Mass = brentq(calc_planet_radius, .2,  13.5, args=args, xtol=1e-5)
+
     Planet = planet.initialize_by_mass(
         *[Mass, structure_params, compositional_params, layers, core_mass_frac, grids])
 
@@ -780,13 +789,13 @@ def find_filename(compositional_params,verbose):
     range_FeO = np.array([0.,.02,.04,.06,.08,.1,.15,.20])
 
     assert SiMg <= max(range_SiMg) ,"Si/Mg is too high and outside of range of grids. max = "+ str(max(range_SiMg))+ " your value = "+ str(SiMg)
-    assert  SiMg >= min(range_SiMg),"Si/Mg is outside of range of grids"
-    assert CaMg <= max(range_CaMg), "Ca/Mg is outside of range of grids"
-    assert CaMg >= min(range_CaMg), "Ca/Mg is outside of range of grids"
-    assert AlMg <= max(range_AlMg), "Al/Mg is outside of range of grids"
-    assert AlMg >= min(range_AlMg), "Al/Mg is outside of range of grids"
-    assert FeO <= max(range_FeO), "FeO is outside of range of grids"
-    assert FeO >= min(range_FeO), "FeO is outside of range of grids"
+    assert  SiMg >= min(range_SiMg),"Si/Mg is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert CaMg <= max(range_CaMg), "Ca/Mg is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert CaMg >= min(range_CaMg), "Ca/Mg is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert AlMg <= max(range_AlMg), "Al/Mg is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert AlMg >= min(range_AlMg), "Al/Mg is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert FeO <= max(range_FeO), "FeO is outside of range of grids, try using PerPlex and set use_grids = False"
+    assert FeO >= min(range_FeO), "FeO is outside of range of grids, try using PerPlex and set use_grids = False"
 
     SiMg_file = range_SiMg[(np.abs(range_SiMg - SiMg)).argmin()]
     CaMg_file = range_CaMg[(np.abs(range_CaMg - CaMg)).argmin()]
@@ -805,6 +814,56 @@ def find_filename(compositional_params,verbose):
         print("Your closest grid filename is: ", filename+"_U/LM_results.txt")
         print()
 
-
-
     return filename
+
+def check(Planet):
+    for k in range(len(Planet['temperature']) - 1):
+        if Planet['temperature'][k] < Planet['temperature'][k + 1] or Planet['density'][k] < Planet['density'][k + 1]:
+            print("something is wrong at index: ",k)
+            print("If true it is in the temperature determination",Planet['temperature'][k] < Planet['temperature'][k + 1])
+            print("If true it is in the density determination", Planet['density'][k] < Planet['density'][k + 1])
+            print("If true it is in the pressure determination", Planet['pressure'][k] < Planet['pressure'][k + 1])
+
+            print("Plotting to show the error")
+            import matplotlib.pyplot as plt
+
+            figure = plt.figure(figsize=(8, 6.5))
+
+            ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
+            ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
+            ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
+            ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
+
+            ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
+            ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
+            ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
+            ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
+            ax1.minorticks_on()
+            text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
+            ax1.text(0.05, 0.95, text)
+
+            # Make a subplot showing the calculated pressure profile
+            ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
+            ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
+            ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
+            ax2.set_ylabel("Pressure (GPa)")
+            ax2.minorticks_on()
+
+            # Make a subplot showing the calculated gravity profile
+            ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
+            ax3.set_ylabel("Gravity (m/s$^2)$")
+            ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
+            ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
+            ax3.minorticks_on()
+
+            # Make a subplot showing the calculated temperature profile
+            ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
+            ax4.set_ylabel("Temperature ($K$)")
+            ax4.set_xlabel("Radius (km)")
+            ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
+            ax4.set_ylim(0., max(Planet['temperature']) + 300)
+            ax4.minorticks_on()
+
+            plt.show()
+            sys.exit()
+

@@ -1,8 +1,11 @@
 import sys
+import os
 import numpy as np
 
-import ExoPlex.minphys
 
+import ExoPlex.minphys
+if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
+    sys.path.insert(1, os.path.abspath('..'))
 Earth_radius = 6371e3
 Earth_mass = 5.97e24
 ToPa = 100000.
@@ -89,11 +92,9 @@ def initialize_by_mass(*args):
     alpha = np.zeros(num_layers)
     cp = np.zeros(num_layers)
 
-
     water_mass = (wt_frac_water*mass_planet)*Earth_mass
     core_mass = ((mass_planet*(1-wt_frac_water))* core_mass_frac *Earth_mass)
     mantle_mass = (mass_planet*Earth_mass)-water_mass-core_mass
-
 
     radius_planet = Radius_planet_guess
     CMB_T_guess = (4180.*(radius_planet-0)-2764.*pow(radius_planet-0,2.)+1219.*pow(radius_planet-0,3.)) + (Mantle_potential_temp-1600)*(0.82+pow(radius_planet-0,1.81))
@@ -109,18 +110,18 @@ def initialize_by_mass(*args):
 
 
     if wt_frac_water > 0:
-        WMB_pres = 1e5
+        WMB_pres = 1e6 #in bar
     else:
-        WMB_pres = 1
+        WMB_pres = 1 #in bar
     for i in range(num_layers):
 
             if i<number_h2o_layers:
                 Pressure_layers[i] = 1 + WMB_pres*(i/number_h2o_layers)
-                Temperature_layers[i] = water_potential_temp+100*(i/number_h2o_layers)
+                Temperature_layers[i] = water_potential_temp+500*(i/number_h2o_layers)
 
             elif i <= number_h2o_layers+num_mantle_layers-1:
-                Pressure_layers[i] = WMB_pres + dP_dr*(i-number_h2o_layers)
-                Temperature_layers[i] = Mantle_potential_temp+dT_dr*(i-number_h2o_layers)
+                Pressure_layers[i] = WMB_pres + 1.5*dP_dr*(i-number_h2o_layers)
+                Temperature_layers[i] = Mantle_potential_temp+1.5*dT_dr*(i-number_h2o_layers)
 
             else:
                 Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*5000
@@ -214,7 +215,7 @@ def compress_mass(*args):
     layers= args[4]
     verbose = args[5]
     n_iterations = 1
-    max_iterations = 25
+    max_iterations = 100
 
     old_r = [10  for i in range(len(Planet['mass']))]
     converge = False
