@@ -147,19 +147,20 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
     wt_frac_O = Core_wt_per.get('O')
     wt_frac_S = Core_wt_per.get('S')
     wt_frac_Fe = Core_wt_per.get('Fe')
-
+    wt_frac_H = Core_wt_per.get('H')
     mFe = 55.845  # molar weights
     mSi = 28.0867
     mO = 15.9994
     mS = 32.0650
+    mH = 1.00784
 
-    mol_total = ((wt_frac_Fe / mFe) + (wt_frac_O / mO) + (wt_frac_S / mS) + (wt_frac_Si / mSi)) / 100
+    mol_total = ((wt_frac_Fe / mFe) + (wt_frac_O / mO) + (wt_frac_S / mS) + (wt_frac_Si / mSi)+(wt_frac_H/mH)) / 100
     mol_frac_Fe = (wt_frac_Fe / mFe / 100) / mol_total
     mol_frac_Si = (wt_frac_Si / mSi / 100) / mol_total
     mol_frac_S = (wt_frac_S / mS / 100) / mol_total
     mol_frac_O = (wt_frac_O / mO / 100) / mol_total
-
-    molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS)
+    mol_frac_H = (wt_frac_H/mH/100)/mol_total
+    molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS) + (mol_frac_H*mH)
 
     core_rho = interpolate.griddata((grid['pressure'], grid['temperature']),
                                      grid['density'], (Pressure, Temperature), method='linear')
