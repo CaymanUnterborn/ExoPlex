@@ -13,7 +13,7 @@ mO = 15.9994
 mS = 32.0650
 mCa = 40.078
 mAl = 26.981
-mH = 1.00784
+
 
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
@@ -88,7 +88,6 @@ def get_percents(compositional_params,verbose):
     wt_frac_Si_core = compositional_params.get('wt_frac_Si_core')
     wt_frac_O_core = compositional_params.get('wt_frac_O_core')
     wt_frac_S_core = compositional_params.get('wt_frac_S_core')
-    wt_frac_H_core = compositional_params.get('wt_frac_H_core')
     conserve_oxy = compositional_params.get('conserve_oxy')
     use_grids = compositional_params.get('use_grids')
 
@@ -99,10 +98,9 @@ def get_percents(compositional_params,verbose):
 
 
     # system of equation which when solved gives molar values of elements in mantle and core
-    # x = [1 nFec,2 nSic, 3 nOc, 4 nSc 5 nH| 6 nFem, 7 nMgm,8 nSim,9 nOm, 10 nCam, 11 nAlm]
+    # x = [1 nFec,2 nSic, 3 nOc, 4 nSc | ,5 nFem, 6 nMgm,7 nSim,8 nOm, 9 nCam, 10 nAlm]
     #Sum of all masses = 100 g
-    b = np.array([0., 0. , 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
-
+    b = np.array([0., 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
 
     wt_frac_Si_core, mol_frac_Fe_mantle = get_Si_core_w_FeO(compositional_params)
 
@@ -111,21 +109,19 @@ def get_percents(compositional_params,verbose):
 
 
     #Return only moles of elements, no molecules
-    A = np.array([ [1., -1. * FeSi, 0., 0., 0., 1., 0., -1. * FeSi, 0., 0., 0.] ,
-                   [wt_frac_Si_core * mFe, (wt_frac_Si_core - 1.) * mSi, wt_frac_Si_core * mO, wt_frac_Si_core * mS ,  wt_frac_Si_core * mH,
+    A = np.array([ [1., -1. * FeSi, 0., 0., 1., 0., -1. * FeSi, 0., 0., 0.] ,
+                   [wt_frac_Si_core * mFe, (wt_frac_Si_core - 1.) * mSi, wt_frac_Si_core * mO, wt_frac_Si_core * mS ,\
                     0., 0., 0., 0., 0., 0.],
-                   [wt_frac_O_core * mFe, (wt_frac_O_core) * mSi, (wt_frac_O_core - 1.) * mO, wt_frac_O_core * mS, wt_frac_O_core * mH
+                   [wt_frac_O_core * mFe, (wt_frac_O_core) * mSi, (wt_frac_O_core - 1.) * mO, wt_frac_O_core * mS
                        , 0., 0., 0., 0., 0., 0.],
-                   [wt_frac_S_core * mFe, (wt_frac_S_core) * mSi, (wt_frac_S_core) * mO, (wt_frac_S_core - 1.) * mS, wt_frac_S_core * mH
+                   [wt_frac_S_core * mFe, (wt_frac_S_core) * mSi, (wt_frac_S_core) * mO, (wt_frac_S_core - 1.) * mS
                        , 0., 0., 0., 0., 0., 0.],
-                   [wt_frac_H_core * mFe, (wt_frac_H_core) * mSi, (wt_frac_H_core) * mO, wt_frac_H_core*mH, (wt_frac_H_core - 1.) * mH
-                       , 0., 0., 0., 0., 0., 0.],
-                   [mol_frac_Fe_mantle, 0., 0., 0., 0. ,(mol_frac_Fe_mantle - 1.), 0., 0., 0., 0., 0.],
-                   [0., -1. * MgSi, 0., 0., 0., 0., 1., -1. * MgSi, 0., 0., 0.],
-                   [0., -1. * CaSi, 0., 0., 0., 0., 0., -1. * CaSi, 0., 1., 0.],
-                   [0., -1. * AlSi, 0., 0., 0.,  0., 0., -1. * AlSi, 0., 0., 1.],
-                   [0., 0., 0. , 0. ,0.,  -1. ,-1., -2. , 1. , -1., -1.5] ,
-          [mFe , mSi , mO, mS , mH, mFe , mMg , mSi ,mO, mCa, mAl]])
+                   [mol_frac_Fe_mantle, 0., 0., 0., (mol_frac_Fe_mantle - 1.), 0., 0., 0., 0., 0.],
+                   [0., -1. * MgSi, 0., 0., 0., 1., -1. * MgSi, 0., 0., 0.],
+                   [0., -1. * CaSi, 0., 0., 0., 0., -1. * CaSi, 0., 1., 0.],
+                   [0., -1. * AlSi, 0., 0., 0., 0., -1. * AlSi, 0., 0., 1.],
+                   [0., 0., 0. , 0. , -1. ,-1., -2. , 1. , -1., -1.5] ,
+          [mFe , mSi , mO, mS , mFe , mMg , mSi ,mO, mCa, mAl]])
 
 
 
@@ -137,12 +133,12 @@ def get_percents(compositional_params,verbose):
     ## find masses and wt% below for perplex ##
 
     #Splitting up into lists
-    #in order Fe, Si, O, S, Hin core
-    Core_moles = Num_moles[:5]
+    #in order Fe, Si, O, S in core
+    Core_moles = Num_moles[:4]
 
 
     #in order Fe, Mg, Si, O, Ca, Al in mantle
-    Mantle_moles = Num_moles[5:]
+    Mantle_moles = Num_moles[4:]
 
     for i in Core_moles:
         if i <-1*np.finfo(float).eps:
@@ -157,7 +153,7 @@ def get_percents(compositional_params,verbose):
 
 
     mass_of_Core = (mFe*(Core_moles[0])+(mSi*Core_moles[1])\
-                    +((mO)*Core_moles[2])+(mS*Core_moles[3])+(mH*Core_moles[4]))
+                    +((mO)*Core_moles[2])+(mS*Core_moles[3]))
 
     mass_of_Mantle = (mFe*Mantle_moles[0])+(mMg*Mantle_moles[1])\
                    +(mSi*Mantle_moles[2])+(mO*Mantle_moles[3])\
@@ -218,21 +214,18 @@ def get_percents(compositional_params,verbose):
     Si_core_wt   = Core_moles[1]*(mSi)/mass_of_Core
     O_core_wt   = Core_moles[2]*(mO)/mass_of_Core
     S_core_wt   = Core_moles[3]*(mS)/mass_of_Core
-    H_core_wt = Core_moles[4]*mH/mass_of_Core
 
-    total_core = (S_core_wt+O_core_wt+Si_core_wt+Fe_core_wt+H_core_wt)
+    total_core = (S_core_wt+O_core_wt+Si_core_wt+Fe_core_wt)
     #make inequality not, absolute if. Use machine precision
 
-    print(H_core_wt)
     Fe_core_wt = abs(round(Fe_core_wt*100.,8))
     Si_core_wt  = abs(round(Si_core_wt*100.,8))
     O_core_wt = abs(round(O_core_wt*100.,8))
     S_core_wt  = abs(round(S_core_wt*100.,8))
-    H_core_wt = abs(round(H_core_wt*100,8))
 
-    Core_wt_per = {'Fe':Fe_core_wt,'Si':Si_core_wt,'O':O_core_wt,'S':S_core_wt,'H':H_core_wt}
+    Core_wt_per = {'Fe':Fe_core_wt,'Si':Si_core_wt,'O':O_core_wt,'S':S_core_wt}
     Core_mol_per ={'Fe':Core_moles[0]/tot_moles_core,'Si':Core_moles[1]/tot_moles_core,\
-                  'O':Core_moles[2]/tot_moles_core,'S':Core_moles[3]/tot_moles_core, 'H':Core_moles[4]/tot_moles_core}
+                  'O':Core_moles[2]/tot_moles_core,'S':Core_moles[3]/tot_moles_core}
     if verbose == True:
         print()
         print("Core composition: ",Core_wt_per)
