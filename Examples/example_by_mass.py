@@ -20,7 +20,7 @@ Temperature_range_mantle_LM = '1700 7000'
 water_potential_temp = 300.
 
 comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','wt_frac_Si_core',
-                          'wt_frac_O_core','wt_frac_S_core','wt_frac_H_core', 'combine_phases','use_grids','conserve_oxy']
+                          'wt_frac_O_core','wt_frac_S_core', 'combine_phases','use_grids','conserve_oxy']
 struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
                          'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
                          'Mantle_potential_temp','water_potential_temp']
@@ -32,7 +32,7 @@ import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    Mass_planet =1  # in Earth masses
+    Mass_planet = 1  # in Earth masses
     #create filename to store values
 
     Output_filename = 'Filename'
