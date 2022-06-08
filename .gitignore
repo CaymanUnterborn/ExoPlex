@@ -1,6 +1,7 @@
 /sphinx/
 /__pycache__/
 *.pyc
+.DS_Store
 /sphinx/_build/*
 /build/*
 *.tmp
