@@ -1,5 +1,6 @@
 /sphinx/
 /__pycache__/
+.idea/
 *.pyc
 .DS_Store
 /sphinx/_build/*
