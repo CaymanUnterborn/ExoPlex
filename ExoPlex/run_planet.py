@@ -80,7 +80,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
 
     Planet['phase_names'] = names
-    Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)
+    Planet['phases'], Planet['phase_names'] = functions.get_phases(Planet, grids, layers, get_phases)
 
     return Planet
 

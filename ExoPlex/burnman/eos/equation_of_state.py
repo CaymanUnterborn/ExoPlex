@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 
@@ -164,7 +164,7 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
-    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
+    def heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Parameters
         ----------
@@ -185,7 +185,7 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
-    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
+    def heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Parameters
         ----------
@@ -292,7 +292,7 @@ class EquationOfState(object):
         """
         raise NotImplementedError("")
 
-    def molar_internal_energy(self, pressure, temperature, volume, params):
+    def internal_energy(self, pressure, temperature, volume, params):
         """
         Parameters
         ----------

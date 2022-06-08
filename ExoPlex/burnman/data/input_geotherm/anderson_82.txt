@@ -1,4 +1,4 @@
-#depth(m)	Temperature(K)
+#depth(km)	Temperature(K)
 0		278
 3000		278
 3000		278

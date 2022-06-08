@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 from __future__ import absolute_import
@@ -12,7 +12,7 @@ from . import equation_of_state as eos
 from . import birch_murnaghan as bm
 from . import debye
 from .. import constants
-from ..utils.math import bracket
+from ..tools import bracket
 
 
 class MGDBase(eos.EquationOfState):
@@ -79,32 +79,32 @@ class MGDBase(eos.EquationOfState):
             raise NotImplementedError("")
 
     # heat capacity at constant volume
-    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
+    def heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant volume at the pressure, temperature, and volume [J/K/mol]
         """
         Debye_T = self._debye_temperature(params['V_0'] / volume, params)
-        C_v = debye.molar_heat_capacity_v(temperature, Debye_T, params['n'])
+        C_v = debye.heat_capacity_v(temperature, Debye_T, params['n'])
         return C_v
 
     def thermal_expansivity(self, pressure, temperature, volume, params):
         """
         Returns thermal expansivity at the pressure, temperature, and volume [1/K]
         """
-        C_v = self.molar_heat_capacity_v(pressure, temperature, volume, params)
+        C_v = self.heat_capacity_v(pressure, temperature, volume, params)
         gr = self._grueneisen_parameter(params['V_0'] / volume, params)
         K = self.isothermal_bulk_modulus(pressure, temperature, volume, params)
         alpha = gr * C_v / K / volume
         return alpha
 
     # heat capacity at constant pressure
-    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
+    def heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant pressure at the pressure, temperature, and volume [J/K/mol]
         """
         alpha = self.thermal_expansivity(pressure, temperature, volume, params)
         gr = self._grueneisen_parameter(params['V_0'] / volume, params)
-        C_v = self.molar_heat_capacity_v(pressure, temperature, volume, params)
+        C_v = self.heat_capacity_v(pressure, temperature, volume, params)
         C_p = C_v * (1. + gr * alpha * temperature)
         return C_p
 
@@ -129,57 +129,6 @@ class MGDBase(eos.EquationOfState):
         return bm.birch_murnaghan(params['V_0'] / volume, params) + \
             self._thermal_pressure(temperature, volume, params) - \
             self._thermal_pressure(T_0, volume, params)
-
-    def gibbs_free_energy(self, pressure, temperature, volume, params):
-        """
-        Returns the Gibbs free energy at the pressure and temperature of the mineral [J/mol]
-        """
-        G = self.helmholtz_free_energy(
-            pressure, temperature, volume, params) + pressure * volume
-        return G
-
-    def molar_internal_energy(self, pressure, temperature, volume, params):
-        """
-        Returns the internal energy at the pressure and temperature of the mineral [J/mol]
-        """
-        return self.helmholtz_free_energy(pressure, temperature, volume, params) + \
-            temperature * \
-            self.entropy(pressure, temperature, volume, params)
-
-    def entropy(self, pressure, temperature, volume, params):
-        """
-        Returns the entropy at the pressure and temperature of the mineral [J/K/mol]
-        """
-        Debye_T = self._debye_temperature(params['V_0'] / volume, params)
-        S = debye.entropy(temperature, Debye_T, params['n'])
-        return S
-
-    def enthalpy(self, pressure, temperature, volume, params):
-        """
-        Returns the enthalpy at the pressure and temperature of the mineral [J/mol]
-        """
-
-        return self.helmholtz_free_energy(pressure, temperature, volume, params) + \
-            temperature * self.entropy(pressure, temperature, volume, params) + \
-            pressure * volume
-
-    def helmholtz_free_energy(self, pressure, temperature, volume, params):
-        """
-        Returns the Helmholtz free energy at the pressure and temperature of the mineral [J/mol]
-        """
-        x = params['V_0'] / volume
-        f = 1. / 2. * (pow(x, 2. / 3.) - 1.)
-        b_iikk = 9. * params['K_0']  # EQ 28, SLB2005
-        b_iikkmm = 27. * params['K_0'] * (params['Kprime_0'] - 4.)  # EQ 29, SLB2005
-
-        F_pressure = ( 0.5 * b_iikk * f * f * params['V_0'] +
-                       (1. / 6.) * params['V_0'] * b_iikkmm * f * f * f )
-
-        Debye_T = self._debye_temperature(params['V_0'] / volume, params)
-        F_thermal = debye.helmholtz_free_energy(temperature, Debye_T, params['n']) - \
-                    debye.helmholtz_free_energy(params['T_0'], Debye_T, params['n'])
-
-        return params['F_0'] + F_pressure + F_thermal
 
     # calculate the thermal correction to the shear modulus as a function of
     # V, T
@@ -234,8 +183,6 @@ class MGDBase(eos.EquationOfState):
         """
         if 'T_0' not in params:
             params['T_0'] = 300.
-        if 'F_0' not in params:
-            params['F_0'] = 0.
 
         # First, let's check the EoS parameters for Tref
         bm.BirchMurnaghanBase.validate_parameters(

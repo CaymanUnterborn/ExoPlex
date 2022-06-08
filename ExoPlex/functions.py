@@ -17,7 +17,7 @@ mAl = 26.981
 
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
-    mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((55.845 + 15.999)  * FeMg)) * (
+    mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((55.845 + 15.999) * FeMg)) * (
                 SiMg * 28.0855 + AlMg * 26.9815 + CaMg * 40.078 + 24.305 + 15.999 * (
                     2 * SiMg + 1.5 * AlMg + CaMg + 1))) / (1 - wt_frac_FeO_wanted)
 
@@ -32,7 +32,8 @@ def get_Si_core_w_FeO(compositional_params):
     wt_fe_m = compositional_params.get('wt_frac_FeO_wanted')
     wt_frac_Si_core = compositional_params.get('wt_frac_Si_core')
 
-    conserve_oxy = compositional_params.get('conserve_oxy')
+    conserve_oxy = compositional_params.get('Conserve_oxy')
+
 
     if conserve_oxy == True and  wt_fe_m > 0:
         print("Please note this will over-write your choice of wt% Si in core since O is conserved")
@@ -45,7 +46,6 @@ def get_Si_core_w_FeO(compositional_params):
         mol_frac_Fe_mantle = mols_fe_m/FeMg
 
         return(wt_frac_Si_core,mol_frac_Fe_mantle)
-
     elif wt_fe_m > 0:
         print("Please note that you have FeO but are not conserving oxygen by placing Si into the core")
         mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
@@ -159,6 +159,7 @@ def get_percents(compositional_params,verbose):
                    +(mSi*Mantle_moles[2])+(mO*Mantle_moles[3])\
                    +(mCa*Mantle_moles[4])+(mAl*Mantle_moles[5])
 
+
     # Mass of 100 mole planet in g
     Mtot= mass_of_Core+mass_of_Mantle
 
@@ -180,14 +181,10 @@ def get_percents(compositional_params,verbose):
     Ca_moles_mant = Mantle_moles[4]
     Al_moles_mant = Mantle_moles[5]
 
-
-    if Si_moles_mant/Mg_moles_mant <0.5 or Si_moles_mant/Mg_moles_mant >2:
-        if use_grids == True:
-            print("Using grids and have a mantle Si/Mg out of range of ExoPlex grids")
-            print("which are valid 0.5 <= Si/Mg <= 2")
-            print(Si_moles_mant/Mg_moles_mant)
-            print(core_mass_frac)
-            sys.exit()
+    if Si_moles_mant/Mg_moles_mant <0.5 or Si_moles_mant/Mg_moles_mant >2 and use_grids == True:
+        print("Using grids and have a mantle Si/Mg out of range of ExoPlex grids")
+        print("which are valid 0.5 <= Si/Mg <= 2")
+        sys.exit()
 
     FeO_mant_wt = Fe_moles_mant*(mFe+mO)/mass_of_Mantle
     MgO_mant_wt = Mg_moles_mant*(mMg+mO)/mass_of_Mantle
@@ -219,9 +216,6 @@ def get_percents(compositional_params,verbose):
     S_core_wt   = Core_moles[3]*(mS)/mass_of_Core
 
     total_core = (S_core_wt+O_core_wt+Si_core_wt+Fe_core_wt)
-    assert (total_core < 1.+(5.*np.finfo(float).eps) and total_core > 1.-(5.*np.finfo(float).eps)) == True, str(total_core) + \
-                    "total core wt% do not add up to 1. Total is " + str(total_core)
-
     #make inequality not, absolute if. Use machine precision
 
     Fe_core_wt = abs(round(Fe_core_wt*100.,8))
@@ -254,7 +248,7 @@ def make_core_grid(use_high,verbose):
     else:
         if verbose == True:
             print("Using normal Core grid: liquid_iron_grid.dat")
-        file = open('../Solutions_Small/liquid_iron_grid_highfeo.dat')
+        file = open('../Solutions_Small/liquid_iron_grid.dat')
 
     temp_file = file.readlines()
     num_rows = len(temp_file[1:])
@@ -360,11 +354,9 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
 
 
         header = temp_file[0].strip('\n').split(',')
-
         Phases = header[5:-1]
         for i in range(len(Phases)):
             Phases[i] = Phases[i].strip()
-
 
         #calculate number of rows getting rid of #'s
 
@@ -426,6 +418,7 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         phase_grid = [row[5:] for row in grid]
 
 
+
         keys = ['temperature', 'pressure', 'density', 'speeds', 'alpha', 'cp', 'phases']
         return dict(zip(keys, [temperature_grid, pressure_grid, density_grid, speed_grid, alpha_grid, cp_grid,
                                phase_grid])), Phases
@@ -464,6 +457,7 @@ def get_phases(Planet,grids,layers,combine_phases):
         if mantle_pressures[i]<=1250000.:
             P_points_UM.append(mantle_pressures[i])
             T_points_UM.append(mantle_temperatures[i])
+
 
 
     Mantle_phases_UM = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']), grids[0]['phases'],
@@ -622,21 +616,19 @@ def write(Planet,filename):
 
     output = []
     for i in range(len(Planet['pressure'])):
-        line_item = [(Planet['radius'][-1]-Planet['radius'][i])/1000.,Planet['radius'][i]/1000., Planet['mass'][i]/5.97e24,
+        line_item = [(Planet['radius'][-1]-Planet['radius'][i])/1000.,Planet['radius'][i]/1000.,
                      Planet['density'][i]/1000.,Planet['pressure'][i]/10000.,Planet['temperature'][i],Planet['gravity'][i]]
-
         for j in range(len(Planet['phases'][i])):
             line_item.append(Planet['phases'][i][j])
 
         output.append(line_item)
     line_name = []
-    line_name.append('Depth_km')
-    line_name.append('Radius_km')
-    line_name.append('Mass_Me')
-    line_name.append('Density_g_cc')
-    line_name.append('Pressure_GPa')
-    line_name.append('Temperature_K')
-    line_name.append('Gravity_m_s-2')
+    line_name.append('Depth')
+    line_name.append('Radius')
+    line_name.append('Density')
+    line_name.append('Pressure')
+    line_name.append('Temperature')
+    line_name.append('Gravity')
 
     for i in Planet['phase_names']:
         line_name.append(str(i))
@@ -778,13 +770,11 @@ def find_filename(compositional_params,verbose):
 
     mantle_wt_percents = get_percents(compositional_params,verbose)[1]
 
-
     mol_Mg = mantle_wt_percents.get('MgO')/(mMg + mO)
     SiMg = round((mantle_wt_percents.get('SiO2')/(mSi+2*mO))/mol_Mg,4)
     CaMg = round((mantle_wt_percents.get('CaO')/(mCa+mO))/mol_Mg,4)
     AlMg =round((2.*mantle_wt_percents.get('Al2O3')/(2.*mAl+3.*mO))/mol_Mg,4)
     FeO = mantle_wt_percents.get('FeO')/100.
-
 
     range_SiMg = np.array([0.5 + .1*x for x in range(16)])
     range_CaMg = np.array([0.02 + 0.01*x for x in range(8)])

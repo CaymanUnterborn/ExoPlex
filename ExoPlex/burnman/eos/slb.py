@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 from __future__ import absolute_import
@@ -21,7 +21,7 @@ except ImportError:
 from . import birch_murnaghan as bm
 from . import debye
 from . import equation_of_state as eos
-from ..utils.math import bracket
+from ..tools import bracket
 
 
 @jit
@@ -185,9 +185,9 @@ class SLBBase(eos.EquationOfState):
         E_th_ref = debye.thermal_energy(
             T_0, debye_T, params['n'])  # thermal energy at reference temperature
 
-        C_v = debye.molar_heat_capacity_v(
+        C_v = debye.heat_capacity_v(
             temperature, debye_T, params['n'])  # heat capacity at temperature T
-        C_v_ref = debye.molar_heat_capacity_v(
+        C_v_ref = debye.heat_capacity_v(
             T_0, debye_T, params['n'])  # heat capacity at reference temperature
 
         q = self.volume_dependent_q(params['V_0'] / volume, params)
@@ -227,20 +227,20 @@ class SLBBase(eos.EquationOfState):
         else:
             raise NotImplementedError("")
 
-    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
+    def heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant volume. :math:`[J/K/mol]`
         """
         debye_T = self._debye_temperature(params['V_0'] / volume, params)
-        return debye.molar_heat_capacity_v(temperature, debye_T, params['n'])
+        return debye.heat_capacity_v(temperature, debye_T, params['n'])
 
-    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
+    def heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant pressure. :math:`[J/K/mol]`
         """
         alpha = self.thermal_expansivity(pressure, temperature, volume, params)
         gr = self.grueneisen_parameter(pressure, temperature, volume, params)
-        C_v = self.molar_heat_capacity_v(pressure, temperature, volume, params)
+        C_v = self.heat_capacity_v(pressure, temperature, volume, params)
         C_p = C_v * (1. + gr * alpha * temperature)
         return C_p
 
@@ -248,7 +248,7 @@ class SLBBase(eos.EquationOfState):
         """
         Returns thermal expansivity. :math:`[1/K]`
         """
-        C_v = self.molar_heat_capacity_v(pressure, temperature, volume, params)
+        C_v = self.heat_capacity_v(pressure, temperature, volume, params)
         gr = self.grueneisen_parameter(pressure, temperature, volume, params)
         K = self.isothermal_bulk_modulus(pressure, temperature, volume, params)
         alpha = gr * C_v / K / volume
@@ -262,7 +262,7 @@ class SLBBase(eos.EquationOfState):
             pressure, temperature, volume, params) + pressure * volume
         return G
 
-    def molar_internal_energy(self, pressure, temperature, volume, params):
+    def internal_energy(self, pressure, temperature, volume, params):
         """
         Returns the internal energy at the pressure and temperature of the mineral [J/mol]
         """

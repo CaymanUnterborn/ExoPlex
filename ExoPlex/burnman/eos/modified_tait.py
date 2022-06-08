@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 from __future__ import absolute_import
@@ -56,30 +56,12 @@ def bulk_modulus(pressure, params):
     return params['K_0'] * (1. + b * (pressure - params['P_0'])) * (a + (1. - a) * np.power((1. + b * (pressure - params['P_0'])), c))
 
 
-def intVdP(pressure, params):
-    """
-    Returns the integral of VdP for the mineral. :math:`[J]`.
-    EQ 13
-    """
-    a, b, c = tait_constants(params)
-    psubpth = pressure - params['P_0']
-
-    if pressure != params['P_0']:
-        intVdP = ((pressure - params['P_0'])
-                  * params['V_0']
-                  * (1. - a + (a * (1. - np.power((1. + b * (psubpth)), 1. - c))
-                               / (b * (c - 1.)
-                                  * (pressure - params['P_0'])))))
-    else:
-        intVdP = 0.
-    return intVdP
-
 class MT(eos.EquationOfState):
 
     """
-    Base class for the generic modified Tait equation of state.
-    References for this can be found in :cite:`HC1974`
-    and :cite:`HP2011` (followed here).
+    Base class for a generic modified Tait equation of state.
+    References for this can be found in Huang and Chow (1974)
+    and Holland and Powell (2011; followed here).
 
     An instance "m" of a Mineral can be assigned this
     equation of state with the command m.set_method('mt')
@@ -119,40 +101,13 @@ class MT(eos.EquationOfState):
         """
         return 0.
 
-    def entropy(self, pressure, temperature, volume, params):
-        """
-        Returns the molar entropy :math:`\mathcal{S}` of the mineral. :math:`[J/K/mol]`
-        """
-        return 0.
-
-    def molar_internal_energy(self, pressure, temperature, volume, params):
-        """
-        Returns the internal energy :math:`\mathcal{E}` of the mineral. :math:`[J/mol]`
-        """
-
-        return self.gibbs_free_energy(pressure, temperature, volume, params) - volume*pressure
-
-    def gibbs_free_energy(self, pressure, temperature, volume, params):
-        """
-        Returns the Gibbs free energy :math:`\mathcal{G}` of the mineral. :math:`[J/mol]`
-        """
-        # G = int VdP = [PV] - int PdV = E + PV
-        a, b, c = tait_constants(params)
-
-        intVdP = params['V_0']*( a/(b*(1. - c)) *
-                                 (np.power(b*(pressure - params['P_0']) + 1.,
-                                           1. - c) - 1.) +
-                                 (1. - a)*(pressure - params['P_0']))
-
-        return intVdP + params['E_0'] + params['V_0']*params['P_0']
-
-    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
+    def heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
         return 1.e99
 
-    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
+    def heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
@@ -175,8 +130,6 @@ class MT(eos.EquationOfState):
         Check for existence and validity of the parameters
         """
 
-        if 'E_0' not in params:
-            params['E_0'] = 0.
         if 'P_0' not in params:
             params['P_0'] = 1.e5
 
@@ -202,7 +155,7 @@ class MT(eos.EquationOfState):
             warnings.warn('Unusual value for V_0', stacklevel=2)
         if params['K_0'] < 1.e9 or params['K_0'] > 1.e13:
             warnings.warn('Unusual value for K_0', stacklevel=2)
-        if params['Kprime_0'] < 0. or params['Kprime_0'] > 40.:
+        if params['Kprime_0'] < 0. or params['Kprime_0'] > 10.:
             warnings.warn('Unusual value for Kprime_0', stacklevel=2)
         if params['G_0'] < 0.0 or params['G_0'] > 1.e13:
             warnings.warn('Unusual value for G_0', stacklevel=2)
