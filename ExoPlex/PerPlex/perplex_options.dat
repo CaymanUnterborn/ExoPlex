@@ -82,7 +82,7 @@ output_iteration_G        default | [F] T => print iteration G to monitor conver
 pause_on_error            default | [T] T => wait for user response after errors
 pc_perturbation           default | [5d-3] pseudo-compound composition perturbation; only relevant for CONVEX
 poisson_ratio             default | [on 0.35] value 1: on, off or all; value 2: 0->0.5; controls use of poisson ratio estimates for shear moduli
-poisson_test              default | [F] T => use poisson ratio to check for valid results
+poisson_test              F | [F] T => use poisson ratio to check for valid results
 proportions               mol | [vol] vol, wt, or mol; volume, weight (mass), or molar phase proportions
 pseudocompound_file       default | [F] echo static pseudocompound compositions to my_project_pseudocompound_list.txt
 reach_increment_switch    default | [on] all, on, off; VERTEX => on activates reach_increments only during auto_refine; MEEMUM default is [all]

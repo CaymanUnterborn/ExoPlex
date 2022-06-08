@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 
@@ -11,10 +11,9 @@ from math import exp
 
 def bulk_modulus(volume, params):
     """
-    compute the bulk modulus as per the third order
-    Vinet equation of state.  Returns bulk
-    modulus in the same units as the reference bulk
-    modulus.  Pressure must be in :math:`[Pa]`.
+    compute the bulk modulus as per the
+    Vinet equation of state.  Reference bulk
+    modulus should be in :math:`[Pa]`.
     """
 
     x = volume / params['V_0']
@@ -28,13 +27,13 @@ def bulk_modulus(volume, params):
 
 def vinet(x, params):
     """
-    equation for the third order Vinet equation of state, returns
+    equation for the  Vinet equation of state, returns
     pressure in the same units that are supplied for the reference bulk
-    modulus (params['K_0'])
+    modulus (params['K_0']), which should be in math:`[Pa]`.
     """
     eta = (3. / 2.) * (params['Kprime_0'] - 1.)
     return 3. * params['K_0'] * (pow(x, -2. / 3.)) * (1. - (pow(x, 1. / 3.))) \
-        * exp(eta * (1. - pow(x, 1. / 3.)))
+        * exp(eta * (1. - pow(x, 1. / 3.))) + params['P_0']
 
 
 def volume(pressure, params):
@@ -51,8 +50,11 @@ def volume(pressure, params):
 class Vinet(eos.EquationOfState):
 
     """
-    Base class for the isothermal Vinet equation of state.  This is third order in strain, and
-    has no temperature dependence.
+    Base class for the isothermal Vinet equation of state.
+    References for this equation of state are :cite:`vinet1986`
+    and :cite:`vinet1987`. This equation of state actually
+    predates Vinet by 55 years :cite:`Rydberg1932`,
+    and was investigated further by :cite:`Stacey1981`.
     """
 
     def volume(self, pressure, temperature, params):
@@ -84,13 +86,41 @@ class Vinet(eos.EquationOfState):
         """
         return 0.
 
-    def heat_capacity_v(self, pressure, temperature, volume, params):
+    def entropy(self, pressure, temperature, volume, params):
+        """
+        Returns the molar entropy :math:`\mathcal{S}` of the mineral. :math:`[J/K/mol]`
+        """
+        return 0.
+
+    def molar_internal_energy(self, pressure, temperature, volume, params):
+        """
+        Returns the internal energy :math:`\mathcal{E}` of the mineral. :math:`[J/mol]`
+        """
+        x = pow(volume/params['V_0'], 1./3.)
+        eta = (3. / 2.) * (params['Kprime_0'] - 1.)
+
+
+        intPdV = (9.* params['V_0'] * params['K_0'] / (eta*eta) *
+                  ((1. - eta*(1. - x))*exp(eta*(1. - x)) - 1.))
+
+
+        return - intPdV + params['E_0']
+
+    def gibbs_free_energy(self, pressure, temperature, volume, params):
+        """
+        Returns the Gibbs free energy :math:`\mathcal{G}` of the mineral. :math:`[J/mol]`
+        """
+        # G = int VdP = [PV] - int PdV = E + PV
+
+        return self.molar_internal_energy(pressure, temperature, volume, params) + volume*pressure
+
+    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
         return 1.e99
 
-    def heat_capacity_p(self, pressure, temperature, volume, params):
+    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
@@ -112,6 +142,12 @@ class Vinet(eos.EquationOfState):
         """
         Check for existence and validity of the parameters
         """
+
+
+        if 'E_0' not in params:
+            params['E_0'] = 0.
+        if 'P_0' not in params:
+            params['P_0'] = 0.
 
         # G is not included in the Vinet EOS so we shall set them to NaN's
         if 'G_0' not in params:

@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 # TO DO: Correct heat capacity, volume where internal order-disorder is
@@ -29,9 +29,12 @@ def cork_variables(cork, cork_P, cork_T, temperature):
 class CORK(eos.EquationOfState):
 
     """
-    Base class for a generic modified Tait equation of state.
-    References for this can be found in Huang and Chow (1974)
-    and Holland and Powell (2011; followed here).
+    Class for the CoRK equation of state detailed in :cite:`HP1991`. The
+    CoRK EoS is a simple virial-type extension to the modified Redlich-Kwong
+    (MRK) equation of state. It was designed to compensate for the tendency of
+    the MRK equation of state to overestimate volumes at high pressures and
+    accommodate the volume behaviour of coexisting gas and liquid phases along
+    the saturation curve.
     """
 
     def grueneisen_parameter(self, pressure, temperature, volume, params):
@@ -69,7 +72,7 @@ class CORK(eos.EquationOfState):
         return 0.
 
     # Cv, heat capacity at constant volume
-    def heat_capacity_v(self, pressure, temperature, volume, params):
+    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant volume at the pressure, temperature, and volume [J/K/mol].
         """
@@ -83,7 +86,7 @@ class CORK(eos.EquationOfState):
         return 0.
 
     # Heat capacity at ambient pressure
-    def heat_capacity_p0(self, temperature, params):
+    def molar_heat_capacity_p0(self, temperature, params):
         """
         Returns heat capacity at ambient pressure as a function of temperature [J/K/mol]
         Cp = a + bT + cT^-2 + dT^-0.5 in Holland and Powell, 2011
@@ -93,7 +96,7 @@ class CORK(eos.EquationOfState):
                 'Cp'][3] * np.power(temperature, -0.5)
         return Cp
 
-    def heat_capacity_p(self, pressure, temperature, volume, params):
+    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Returns heat capacity at constant pressure at the pressure, temperature, and volume [J/K/mol]
         """
@@ -176,7 +179,7 @@ class CORK(eos.EquationOfState):
         if params['cork_P'] < 1.e4 or params['cork_P'] > 1.e8:
             warnings.warn('Unusual value for cork_P', stacklevel=2)
 
-        if self.heat_capacity_p0(params['T_0'], params) < 0.:
+        if self.molar_heat_capacity_p0(params['T_0'], params) < 0.:
             warnings.warn('Negative heat capacity at T_0', stacklevel=2)
-        if self.heat_capacity_p0(2000., params) < 0.:
+        if self.molar_heat_capacity_p0(2000., params) < 0.:
             warnings.warn('Negative heat capacity at 2000K', stacklevel=2)
