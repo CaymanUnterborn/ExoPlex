@@ -3,7 +3,6 @@ import os
 import numpy as np
 
 
-import ExoPlex.minphys
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
 Earth_radius = 6371e3
@@ -14,7 +13,6 @@ from ExoPlex import minphys as minphys
 from scipy import interpolate
 
 def initialize_by_mass(*args):
-    from ExoPlex import burnman as bm
 
     """
    This module creates the dictionary of lists for each planetary parameter (e.g., density) for a planet of the mass
@@ -38,10 +36,11 @@ def initialize_by_mass(*args):
     Planet: dictionary
         Dictionary of initial guess of pressure, temperature, expansivity, specific heat and phases for modeled planet
     """
+    from ExoPlex import burnman as bm
+
     rock = bm.Composite([bm.minerals.SLB_2011.mg_perovskite(),
                          bm.minerals.SLB_2011.periclase()], \
                         [0.8, 0.2])
-
     ice = bm.minerals.other.water()
     mass_planet = args[0]
     structural_params = args[1]
@@ -58,7 +57,7 @@ def initialize_by_mass(*args):
     water_rad_frac = 0.1
 
 
-    Radius_planet_guess = pow(mass_planet*5.97e24 / 5500. / (4*np.pi/3.),1/3.)/6371e3
+    Radius_planet_guess = pow(mass_planet*5.97e24 / 6000. / (4*np.pi/3.),1/3.)/6371e3
 
     if Radius_planet_guess > 2:
         Radius_planet_guess = 2.
@@ -115,17 +114,16 @@ def initialize_by_mass(*args):
     for i in range(num_layers):
 
             if i<number_h2o_layers:
-                Pressure_layers[i] = 1 + WMB_pres*(i/number_h2o_layers)
-                Temperature_layers[i] = water_potential_temp+500*(i/number_h2o_layers)
+                Pressure_layers[i] = 1 + .5*WMB_pres*(i/number_h2o_layers)
+                Temperature_layers[i] = water_potential_temp+700*(i/number_h2o_layers)
 
             elif i <= number_h2o_layers+num_mantle_layers-1:
-                Pressure_layers[i] = WMB_pres + 1.5*dP_dr*(i-number_h2o_layers)
-                Temperature_layers[i] = Mantle_potential_temp+1.5*dT_dr*(i-number_h2o_layers)
+                Pressure_layers[i] = WMB_pres + 1*dP_dr*(i-number_h2o_layers)
+                Temperature_layers[i] = Mantle_potential_temp+1*dT_dr*(i-number_h2o_layers)
 
             else:
-                Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + (i-number_h2o_layers-num_mantle_layers)*5000
-                Temperature_layers[i] = Temperature_layers[i-1]+0.5*(i-number_h2o_layers-num_mantle_layers)/num_core_layers
-
+                Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + ((i-number_h2o_layers-num_mantle_layers)/num_core_layers)*1e7
+                Temperature_layers[i] = Temperature_layers[i-1]+2*(i-number_h2o_layers-num_mantle_layers)/num_core_layers
 
 
 
@@ -230,9 +228,7 @@ def compress_mass(*args):
         Planet['pressure'] = minphys.get_pressure(Planet,layers)
         Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
         Planet['radius'] = minphys.get_radius(Planet, layers)
-
         n_iterations+=1
-
     return Planet
 
 

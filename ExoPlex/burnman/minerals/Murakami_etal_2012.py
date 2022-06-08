@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 
@@ -13,8 +13,8 @@ Stixrude & Lithgow-Bertolloni 2005. Some information from personal communication
 
 """
 from __future__ import absolute_import
-from .. import mineral_helpers as helpers
-from ..mineral import Mineral
+from ..classes import mineral_helpers as helpers
+from ..classes.mineral import Mineral
 
 
 class mg_perovskite(Mineral):

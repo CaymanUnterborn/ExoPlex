@@ -1,12 +1,13 @@
 from __future__ import absolute_import
-# This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for
+# the Earth and Planetary Sciences
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
-
+import numpy as np
 import scipy.optimize as opt
 from . import equation_of_state as eos
-from ..tools import bracket
+from ..utils.math import bracket
 import warnings
 
 
@@ -45,10 +46,9 @@ def volume(pressure, params):
 
     func = lambda x: birch_murnaghan(params['V_0'] / x, params) - pressure
     try:
-        sol = bracket(func, 1.1*params['V_0'], 1.e-8 * params['V_0'])
+        sol = bracket(func, params['V_0'], 1.e-2 * params['V_0'])
     except:
         raise ValueError(
-
             'Cannot find a volume, perhaps you are outside of the range of validity for the equation of state?')
     return opt.brentq(func, sol[0], sol[1])
 
@@ -119,13 +119,45 @@ class BirchMurnaghanBase(eos.EquationOfState):
         elif(self.order == 3):
             return shear_modulus_third_order(volume, params)
 
-    def heat_capacity_v(self, pressure, temperature, volume, params):
+    def entropy(self, pressure, temperature, volume, params):
+        """
+        Returns the molar entropy :math:`\mathcal{S}` of the mineral. :math:`[J/K/mol]`
+        """
+        return 0.
+
+    def molar_internal_energy(self, pressure, temperature, volume, params):
+        """
+        Returns the internal energy :math:`\mathcal{E}` of the mineral. :math:`[J/mol]`
+        """
+        x = np.power(volume/params['V_0'], -1./3.)
+        x2 = x*x
+        x4 = x2*x2
+        x6 = x4*x2
+        x8 = x4*x4
+
+        xi1 = 3.*(4. - params['Kprime_0'])/4.
+
+        intPdV = (-9./2. * params['V_0'] * params['K_0'] *
+                  ((xi1 + 1.)*(x4/4. - x2/2. + 1./4.) -
+                   xi1*(x6/6. - x4/4. + 1./12.)))
+
+        return - intPdV + params['E_0']
+
+    def gibbs_free_energy(self, pressure, temperature, volume, params):
+        """
+        Returns the Gibbs free energy :math:`\mathcal{G}` of the mineral. :math:`[J/mol]`
+        """
+        # G = int VdP = [PV] - int PdV = E + PV
+
+        return self.molar_internal_energy(pressure, temperature, volume, params) + volume*pressure
+
+    def molar_heat_capacity_v(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
         return 1.e99
 
-    def heat_capacity_p(self, pressure, temperature, volume, params):
+    def molar_heat_capacity_p(self, pressure, temperature, volume, params):
         """
         Since this equation of state does not contain temperature effects, simply return a very large number. :math:`[J/K/mol]`
         """
@@ -148,6 +180,8 @@ class BirchMurnaghanBase(eos.EquationOfState):
         Check for existence and validity of the parameters
         """
 
+        if 'E_0' not in params:
+            params['E_0'] = 0.
         if 'P_0' not in params:
             params['P_0'] = 0.
 
@@ -195,7 +229,7 @@ class BM2(BirchMurnaghanBase):
 
     """
     Third order Birch Murnaghan isothermal equation of state.
-    This uses the third order expansion for shear modulus.
+    This uses the second order expansion for shear modulus.
     """
 
     def __init__(self):

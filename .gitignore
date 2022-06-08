@@ -1,5 +1,6 @@
 /sphinx/
 /__pycache__/
+.idea/
 *.pyc
 /sphinx/_build/*
 /build/*
@@ -76,3 +77,4 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 .DS_Store
 .idea/.name
+.DS_Store

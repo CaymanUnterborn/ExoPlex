@@ -1,5 +1,6 @@
-# This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# This file is part of BurnMan - a thermoelastic and thermodynamic toolkit
+# for the Earth and Planetary Sciences
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 
@@ -9,17 +10,12 @@ Written in the Holland and Powell, 2011 form
 
 EoS terms for bcc are from HP_2011_ds62 for iron
 EoS terms for fcc are from an unpublished calibration
-(R. Myhill, 02/2015)
+(R. Myhill, 02/2017)
 """
 from __future__ import absolute_import
 
-from ..mineral import Mineral
-from ..solidsolution import SolidSolution
-from ..solutionmodel import *
-from ..processchemistry import read_masses, dictionarize_formula, formula_mass
-
-atomic_masses = read_masses()
-
+from ..classes.mineral import Mineral
+from ..utils.chemistry import formula_mass
 
 """
 ENDMEMBERS
@@ -29,8 +25,7 @@ ENDMEMBERS
 class bcc_iron (Mineral):
 
     def __init__(self):
-        formula = 'Fe1.0'
-        formula = dictionarize_formula(formula)
+        formula = {'Fe': 1.0}
         self.params = {
             'name': 'BCC iron',
             'formula': formula,
@@ -44,18 +39,18 @@ class bcc_iron (Mineral):
             'Kprime_0': 5.16,
             'Kdprime_0': -3.1e-11,
             'n': sum(formula.values()),
-            'molar_mass': formula_mass(formula, atomic_masses),
-            'curie_temperature': [1043., 0.0],
-            'magnetic_moment': [2.22, 0.0],
-            'magnetic_structural_parameter': 0.4}
+            'molar_mass': formula_mass(formula)}
+        self.property_modifiers = [
+            ['magnetic_chs', {'structural_parameter': 0.4,
+                              'curie_temperature': [1043., 0.],
+                              'magnetic_moment': [2.22, 0.]}]]
         Mineral.__init__(self)
 
 
 class fcc_iron (Mineral):
 
     def __init__(self):
-        formula = 'Fe1.0'
-        formula = dictionarize_formula(formula)
+        formula = {'Fe': 1.0}
         self.params = {
             'name': 'FCC iron',
             'formula': formula,
@@ -69,8 +64,9 @@ class fcc_iron (Mineral):
             'Kprime_0': 5.2,
             'Kdprime_0': -3.37e-11,
             'n': sum(formula.values()),
-            'molar_mass': formula_mass(formula, atomic_masses),
-            'curie_temperature': [201., 0.0],
-            'magnetic_moment': [2.1, 0.0],
-            'magnetic_structural_parameter': 0.28}
+            'molar_mass': formula_mass(formula)}
+        self.property_modifiers = [
+            ['magnetic_chs', {'structural_parameter': 0.28,
+                              'curie_temperature': [201., 0.],
+                              'magnetic_moment': [2.1, 0.]}]]
         Mineral.__init__(self)

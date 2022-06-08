@@ -1,5 +1,5 @@
 # This file is part of BurnMan - a thermoelastic and thermodynamic toolkit for the Earth and Planetary Sciences
-# Copyright (C) 2012 - 2015 by the BurnMan team, released under the GNU
+# Copyright (C) 2012 - 2017 by the BurnMan team, released under the GNU
 # GPL v2 or later.
 
 from __future__ import absolute_import
@@ -75,9 +75,9 @@ def debye_fn(x):
     return 3. * sol[0] / pow(x, 3.)
 
 
-eps = np.finfo(np.float).eps
-sqrt_eps = np.sqrt(np.finfo(np.float).eps)
-log_eps = np.log(np.finfo(np.float).eps)
+eps = np.finfo(float).eps
+sqrt_eps = np.sqrt(np.finfo(float).eps)
+log_eps = np.log(np.finfo(float).eps)
 
 
 @jit
@@ -134,7 +134,7 @@ def thermal_energy(T, debye_T, n):
 
 
 @jit
-def heat_capacity_v(T, debye_T, n):
+def molar_heat_capacity_v(T, debye_T, n):
     """
     Heat capacity at constant volume.  In J/K/mol
     """
