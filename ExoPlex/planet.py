@@ -207,7 +207,7 @@ def compress_mass(*args):
     """
     Planet = args[0]
     grids = args[1]
-    Core_wt_per = args[2]
+    Core_mol_per = args[2]
     structural_params= args[3]
     layers= args[4]
     verbose = args[5]
@@ -223,7 +223,7 @@ def compress_mass(*args):
         if n_iterations>1:
             converge,old_r = minphys.check_convergence(Planet['density'],old_r)
 
-        Planet['density'] = minphys.get_rho(Planet,grids,Core_wt_per,layers)
+        Planet['density'] = minphys.get_rho(Planet,grids,Core_mol_per,layers)
         Planet['gravity'] = minphys.get_gravity(Planet,layers)
         Planet['pressure'] = minphys.get_pressure(Planet,layers)
         Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)

@@ -16,7 +16,7 @@ Pressure_range_mantle_LM = '1000000 7500000'
 Temperature_range_mantle_LM = '2000 5000'
 
 comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','wt_frac_Si_core',
-                          'wt_frac_O_core','wt_frac_S_core', 'combine_phases','use_grids','conserve_oxy']
+                          'wt_frac_O_core','wt_frac_S_core', 'wt_frac_Ni_core','combine_phases','use_grids','conserve_oxy']
 struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
                          'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
                          'Mantle_potential_temp','water_potential_temp']
@@ -48,13 +48,14 @@ if __name__ == "__main__":
     water_potential_temp = 300.
 
     #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
-    wt_frac_FeO_wanted = 0. #by mass
+    wt_frac_FeO_wanted = 0.0 #by mass
     conserve_oxy = False
 
     #Now we can mix various elements into the core or mantle
     wt_frac_Si_core = 0.0 #by mass <1
     wt_frac_O_core = 0.0 #by mass
     wt_frac_S_core = 0.0 #by mass
+    wt_frac_Ni_core = 0.052 #by mass, Earth value ~0.052
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -74,7 +75,7 @@ if __name__ == "__main__":
 
 
     compositional_params = dict(zip(comp_keys,[wt_frac_water,FeMg,SiMg,CaMg,AlMg,wt_frac_FeO_wanted,wt_frac_Si_core, \
-                          wt_frac_O_core,wt_frac_S_core, combine_phases,use_grids,conserve_oxy]))
+                          wt_frac_O_core,wt_frac_S_core, wt_frac_Ni_core, combine_phases,use_grids,conserve_oxy]))
 
 
     if use_grids == True:

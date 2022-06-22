@@ -77,7 +77,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
         core_grid = functions.make_core_grid(False,verbose)
 
     grids = [grids_low,grids_high,core_grid,water_grid]
-    Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+    Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_mol_per, layers,verbose)
 
     Planet['phase_names'] = names
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)
@@ -152,7 +152,7 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
 
     grids = [grids_low,grids_high,core_grid,water_grid]
 
-    Planet = functions.find_Planet_mass(mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+    Planet = functions.find_Planet_mass(mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_mol_per, layers,verbose)
     Planet['phase_names'] = names
 
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)

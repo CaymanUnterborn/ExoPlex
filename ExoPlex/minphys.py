@@ -8,8 +8,14 @@ import sys
 ToPa = 100000
 ToBar = 1/ToPa
 G = 6.67408e-11
+mFe = 55.845  # molar weights
+mSi = 28.0867
+mO = 15.9994
+mS = 32.0650
+mNi = 58.6934
 
-def get_rho(Planet,grids,Core_wt_per,layers):
+
+def get_rho(Planet,grids,Core_mol_per,layers):
     """
    This module stitches together the lower and upper mantle grids and interpolates within them to determine the density
    of each material in each layer in the planet. It also calculates the density of the core for those pressures and temperatures
@@ -45,7 +51,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
-    core_data = get_core_rho(grids[2], Core_wt_per, P_core, T_core)
+    core_data = get_core_rho(grids[2], Core_mol_per, P_core, T_core)
 
     for i in range(num_core_layers):
         if i < num_core_layers:
@@ -151,24 +157,14 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     return rho_layers
 
-def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
-    wt_frac_Si = Core_wt_per.get('Si')
-    wt_frac_O = Core_wt_per.get('O')
-    wt_frac_S = Core_wt_per.get('S')
-    wt_frac_Fe = Core_wt_per.get('Fe')
+def get_core_rho(grid,Core_mol_per,Pressure,Temperature):
+    mol_frac_Fe = Core_mol_per.get('Fe')
+    mol_frac_Si = Core_mol_per.get('Si')
+    mol_frac_S = Core_mol_per.get('S')
+    mol_frac_O = Core_mol_per.get('O')
+    mol_frac_Ni = Core_mol_per.get('Ni')
 
-    mFe = 55.845  # molar weights
-    mSi = 28.0867
-    mO = 15.9994
-    mS = 32.0650
-
-    mol_total = ((wt_frac_Fe / mFe) + (wt_frac_O / mO) + (wt_frac_S / mS) + (wt_frac_Si / mSi)) / 100
-    mol_frac_Fe = (wt_frac_Fe / mFe / 100) / mol_total
-    mol_frac_Si = (wt_frac_Si / mSi / 100) / mol_total
-    mol_frac_S = (wt_frac_S / mS / 100) / mol_total
-    mol_frac_O = (wt_frac_O / mO / 100) / mol_total
-
-    molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS)
+    molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS) + (mol_frac_Ni*mNi)
 
     core_rho = interpolate.griddata((grid['pressure'], grid['temperature']),
                                      grid['density'], (Pressure, Temperature), method='linear')
