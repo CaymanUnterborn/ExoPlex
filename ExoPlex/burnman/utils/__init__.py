@@ -16,10 +16,10 @@ those in constants.py.
 """
 
 from __future__ import absolute_import
-from . import chemistry
+#from . import chemistry
 
 from . import math
-from . import misc
-from . import reductions
-from . import unitcell
-from . import geotherm
+#from . import misc
+#from . import reductions
+#from . import unitcell
+#from . import geotherm

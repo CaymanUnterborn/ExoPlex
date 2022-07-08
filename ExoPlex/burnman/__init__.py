@@ -206,34 +206,13 @@ from __future__ import absolute_import
 from .version import version as __version__
 
 # Low level utility functions
-from . import utils
-
-from .utils import geotherm
 
 # Classes and associated functions for representing rocks and minerals:
 from .classes.material import Material, material_property
-from .classes.perplex import PerplexMaterial
 from .classes.mineral import Mineral
-from .classes.combinedmineral import CombinedMineral
-from .classes.solutionmodel import SolutionModel
-from .classes.solution import Solution, SolidSolution
-from .classes.composite import Composite
-from .classes.calibrant import Calibrant
-from .classes.anisotropy import AnisotropicMaterial
-from .classes.anisotropicmineral import AnisotropicMineral
-from .classes.anisotropicmineral import cell_parameters_to_vectors
-from .classes.anisotropicmineral import cell_vectors_to_parameters
-from .classes.mineral_helpers import HelperLowHighPressureRockTransition
-from .classes.mineral_helpers import HelperSpinTransition
-from .classes.mineral_helpers import HelperRockSwitcher
 
-# Other classes
-from .classes.composition import Composition
-from .classes.layer import Layer, BoundaryLayerPerturbation
-from .classes.planet import Planet
-from .classes.polytope import MaterialPolytope
-from .classes import seismic
-from .classes import averaging_schemes
+from .classes.composite import Composite
+
 
 # Mineral library
 from . import minerals
@@ -241,17 +220,3 @@ from . import minerals
 # Equations of state
 from . import eos
 
-# Calibrants
-from . import calibrants
-
-# High level tools
-from . import tools
-from .tools.equilibration import equilibrate
-from .tools.partitioning import calculate_nakajima_fp_pv_partition_coefficient
-
-# Optimization functions
-from .optimize import composition_fitting
-from .optimize import linear_fitting
-from .optimize import nonlinear_fitting
-from .optimize import nonlinear_solvers
-from .optimize import eos_fitting
