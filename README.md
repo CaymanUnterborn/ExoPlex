@@ -15,3 +15,5 @@ Each of these can be installed using pip.
 Currently ExoPlex is known to work on Mac and Linux machines.
 
 Tutorials are available within the examples folder. More documentation on the tutorials is coming soon, however, example_by_mass.py or example_by_radius.py will provide you with everything you need to begin building planets. 
+
+Expanded documentation is forthcoming. 
