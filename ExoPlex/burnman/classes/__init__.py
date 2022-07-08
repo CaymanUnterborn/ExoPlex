@@ -10,13 +10,13 @@ BurnMan object classes
 from __future__ import absolute_import
 
 from . import material
-from . import perplex
+#from . import perplex
 from . import mineral
-from . import combinedmineral
-from . import solutionmodel
-from . import solution
-from . import composite
-from . import anisotropy
-from . import anisotropicmineral
-from . import mineral_helpers
-from . import calibrant
+#from . import combinedmineral
+#from . import solutionmodel
+#from . import solution
+#from . import composite
+#from . import anisotropy
+#from . import anisotropicmineral
+#from . import mineral_helpers
+#from . import calibrant

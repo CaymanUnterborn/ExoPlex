@@ -37,7 +37,6 @@ class liquid_iron( Mineral ):
             'P_0': 1.e5,
             'T_0': 1811.,
             'S_0': 100., # to fit
-            'molar_mass': m,
             'V_0': V_0,
             'E_0': 0.,
             'K_S': 109.7e9,

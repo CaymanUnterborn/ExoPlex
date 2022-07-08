@@ -7,14 +7,14 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
-from scipy.interpolate import interp2d
-from sympy import Matrix, Rational
-import scipy.integrate as integrate
-from collections import Counter
-import itertools
+#from scipy.ndimage.filters import gaussian_filter
+#from scipy.interpolate import interp2d
+#rom sympy import Matrix, Rational
+#import scipy.integrate as integrate
+#from collections import Counter
+#import itertools
 
-from .reductions import row_reduce
+#from .reductions import row_reduce
 
 
 def round_to_n(x, xerr, n):
