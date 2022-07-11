@@ -56,6 +56,13 @@ def initialize_by_mass(*args):
     core_rad_frac = 0.5
     water_rad_frac = 0.1
 
+    if number_h2o_layers <=0 and wt_frac_water >0:
+        print("You did not include any water layers, please update num_h2o_layers")
+        sys.exit()
+
+    if number_h2o_layers >= 0 and wt_frac_water <= 0:
+        print("You did not include any water in your model yet have water layers, please update wt_frac_water")
+        sys.exit()
 
     Radius_planet_guess = pow(mass_planet*5.97e24 / 6000. / (4*np.pi/3.),1/3.)/6371e3
 
