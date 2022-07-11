@@ -46,7 +46,7 @@ if __name__ == "__main__":
     wt_frac_water = 0.0
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 0
+    number_h2o_layers = 100
 
     #The potential Temperature of Water, if present
     water_potential_temp = 300.
