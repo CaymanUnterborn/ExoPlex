@@ -60,7 +60,7 @@ def initialize_by_mass(*args):
         print("You did not include any water layers, please update num_h2o_layers")
         sys.exit()
 
-    if number_h2o_layers >= 0 and wt_frac_water <= 0:
+    if number_h2o_layers > 0 and wt_frac_water <= 0:
         print("You did not include any water in your model yet have water layers, please update wt_frac_water")
         sys.exit()
 
@@ -78,10 +78,6 @@ def initialize_by_mass(*args):
     else:
         core_thickness_guess = core_rad_frac * (Radius_planet_guess*6371e3)
         mantle_thickness_guess = Radius_planet_guess*6371e3 - core_thickness_guess
-
-    if (wt_frac_water == 0. and number_h2o_layers > 0) or (number_h2o_layers == 0 and wt_frac_water > 0):
-       print ("You have layers of water but no water!")
-       number_h2o_layers = 0
 
     num_layers = num_core_layers+num_mantle_layers + number_h2o_layers # add 50 shells if there is an h2O layer
 
