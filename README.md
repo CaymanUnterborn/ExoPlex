@@ -9,11 +9,12 @@ scipy
 matplotlib
 pexpect
 sympy
+jupyter (for Tutorial)
 
 Each of these can be installed using pip.
 
 Currently ExoPlex is known to work on Mac and Linux machines.
 
-Tutorials are available within the examples folder. More documentation on the tutorials is coming soon, however, example_by_mass.py or example_by_radius.py will provide you with everything you need to begin building planets. 
+Tutorials are available within the Tutorial folder which were created for the 2019 Sagan Workshop, and updated in 2022. Each word doc within the Tutorial folder examines individual available paramters utilized in the ExoPlex code. Once you get a handle on what the code can do, basic input files (example_by_mass.py or example_by_radius.py) are availabe in the Examples folder.
 
-Expanded documentation is forthcoming. 
+Expanded documentation for individual functions is forthcoming. 
