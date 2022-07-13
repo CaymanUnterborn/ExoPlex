@@ -34,7 +34,7 @@ def get_Si_core_w_FeO(compositional_params):
 
     conserve_oxy = compositional_params.get('conserve_oxy')
 
-    if conserve_oxy == True and  wt_fe_m > 0:
+    if conserve_oxy == True and  wt_fe_m > 0 and wt_frac_Si_core >0:
         print("Please note this will over-write your choice of wt% Si in core since O is conserved")
         m_feo = mO+mFe
         OTR = mMg + CaMg*mCa + AlMg*mAl + mO*(1+CaMg + 1.5*AlMg)
@@ -46,7 +46,7 @@ def get_Si_core_w_FeO(compositional_params):
 
         return(wt_frac_Si_core,mol_frac_Fe_mantle)
 
-    elif wt_fe_m > 0:
+    elif wt_fe_m > 0 and wt_frac_Si_core >0:
         print("Please note that you have FeO but are not conserving oxygen by placing Si into the core")
         mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
 

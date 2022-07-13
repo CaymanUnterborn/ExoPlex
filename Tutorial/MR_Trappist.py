@@ -9,48 +9,50 @@ import numpy as np
 # hack to allow scripts to be placed in subdirectories next to exoplex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
-Pressure_range_mantle_UM = '1000 1400000'
-Temperature_range_mantle_UM = '1400 3000'
+Pressure_range_mantle_UM = '1 1400000'
+Temperature_range_mantle_UM = '1600 3500'
 
-Pressure_range_mantle_LM = '1250000 7500000'
-Temperature_range_mantle_LM = '2500 5000'
+Pressure_range_mantle_LM = '1250000 40000000'
+Temperature_range_mantle_LM = '1700 7000'
 
-core_rad_frac_guess = 0.5
-water_rad_frac_guess = 0.1
+comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','wt_frac_Si_core',
+                          'wt_frac_O_core','wt_frac_S_core', 'combine_phases','use_grids','conserve_oxy']
+struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
+                         'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
+                         'Mantle_potential_temp','water_potential_temp']
+
 water_potential_temp = 300.
 
 combine_phases = True
 use_grids = True
-
-T1_masses = [1.070,1.156,0.297,0.772,0.934,1.148,0.331]
-T1_radii = [1.121,1.095,0.784,0.910,1.046,1.148,0.773]
-T1_mass_EB = [0.154,0.142,0.039,0.079,0.080,0.098,0.056]
-T1_rad_EB = [0.032,0.031,0.023,0.027,0.030,0.033,0.027]
+verbose = False
 
 import ExoPlex as exo
 
 if __name__ == "__main__":
 
-    #Masses of TRAPPIST-1 Planets:
-    #T1b: 1.070 +/- 0.154
-    #T1c: 1.156 +/- 0.142
-    #T1d: 0.297 +/- 0.039
-    #T1e: 0.772 +/- 0.079
-    #T1f: 0.934 +/- 0.080,
-    #T1g: 1.148 +/- 0.098
-    #T1h: 0.331 +/- 0.056
+    #Approximate Masses of TRAPPIST-1 Planets (Agol et al., 2021; ApJ):
+    #T1b: 1.374 +/- 0.069
+    #T1c: 1.308 +/- 0.056
+    #T1d: 0.388 +/- 0.012
+    #T1e: 0.692 +/- 0.022
+    #T1f: 1.039 +/- 0.031
+    #T1g: 1.321 +/- 0.038
+    #T1h: 0.326 +/- 0.020
 
-    Mass_planet_avg = 1.37
-    Mass_planet_sigma = 0.
+    number_of_runs = 5
+
+    Mass_planet_avg = 1.374
+    Mass_planet_sigma = 0.069
 
     #Need to give the run a name. This will be used as the name of the output files
     Star = 'TRAPPIST-1b'
 
     #Next user must input the ratios by mole (Earth is Ca/Mg = .07, Si/Mg = 0.90, Al/Mg = 0.09, Fe/Mg = 0.9)
-    CaMg = 0.07
-    SiMg = 1.2
+    FeMg = 0.5
+    SiMg = 0.9
     AlMg = 0.09
-    FeMg = 0.9
+    CaMg = 0.07
 
     #How much water do you want in your planet? By mass fraction.
     wt_frac_water = 0.
@@ -63,7 +65,9 @@ if __name__ == "__main__":
     wt_frac_O_core = 0. #by mass
     wt_frac_S_core = 0. #by mass
 
-    mol_frac_Fe_mantle = 0. #by mole
+    #What fraction of the mantle would you like to be made of FeO? This Fe will be pulled from the core.
+    wt_frac_FeO_wanted = 0. #by mass
+    conserve_oxy = False
 
     #What potential temperature (in K) do you want to start your mantle adiabat?
     Mantle_potential_temp = 1600.
@@ -77,13 +81,12 @@ if __name__ == "__main__":
 
     #lastly we need to decide how many layers to put in the planet. This is the resolution of
     #the mass-radius sampling.
-    num_mantle_layers = 800
-    num_core_layers = 1000
+    num_mantle_layers = 300
+    num_core_layers = 300
 
     #create filename to store values
     Output_filename = Star + "_baseline"
 
-    number_of_runs = 1
 
     #Define output lists
     Output_radii = []
@@ -102,14 +105,15 @@ if __name__ == "__main__":
         print ("Iteration # ", str(i) , "of ", number_of_runs)
         print ("Chosen Mass", str('%.2f'%Mass_planet), "Earth Masses")
 
-        compositional_params = [wt_frac_water, FeMg, SiMg, CaMg, AlMg, mol_frac_Fe_mantle, wt_frac_Si_core, \
-                                wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids]
+        compositional_params = dict(
+            zip(comp_keys, [wt_frac_water, FeMg, SiMg, CaMg, AlMg, wt_frac_FeO_wanted, wt_frac_Si_core, \
+                            wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids, conserve_oxy]))
 
-        filename = exo.functions.find_filename(compositional_params)
+        filename = exo.functions.find_filename(compositional_params,verbose)
 
-        structure_params =  [Pressure_range_mantle_UM,Temperature_range_mantle_UM,resolution_UM,
-                             Pressure_range_mantle_LM, Temperature_range_mantle_LM, resolution_LM,
-                             core_rad_frac_guess,Mantle_potential_temp,water_rad_frac_guess,water_potential_temp]
+        structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM, Temperature_range_mantle_UM, resolution_UM,
+                                                  Pressure_range_mantle_LM, Temperature_range_mantle_LM, resolution_LM,
+                                                  Mantle_potential_temp, water_potential_temp]))
 
 
         layers = [num_mantle_layers,num_core_layers,number_h2o_layers]
@@ -118,8 +122,10 @@ if __name__ == "__main__":
         #Cp and alpha are calculated and stored in the Solutions folder. If the file already exists
         #(in name, not necessarily in composition), then PerPlex is not run again.
 
+        Planet = exo.run_planet_mass(Mass_planet, compositional_params, structure_params, layers, filename, verbose)
 
-        Planet = exo.run_planet_mass(Mass_planet,compositional_params,structure_params,layers,filename)
+        #check that everything worked
+        exo.functions.check(Planet)
 
         # Planet is a dictionary containing many parameters of interest:
         # Planet.get('radius') = list of the radial points from calculation (m)
@@ -134,11 +140,12 @@ if __name__ == "__main__":
         print ()
         print ("Mass = ", '%.3f' % (Planet['mass'][-1] / 5.97e24), "Earth masses")
         print ("Radius = ", '%.3f' % (Planet['radius'][-1] / 6371e3), "Earth radii")
-        print ("Core Mass Fraction = ", '%.2f' % (100. * Planet['mass'][num_core_layers] / Planet['mass'][-1]))
-        print ("Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers] / Planet['radius'][-1]))
+        print ("Core Mass Fraction = ", '%.2f' % ( Planet['mass'][num_core_layers] / Planet['mass'][-1]))
+        print ("Core Radius Fraction = ", '%.2f' % ( Planet['radius'][num_core_layers] / Planet['radius'][-1]))
         print ("CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 10000), "GPa")
         print ()
-        #print "WMB pressure", '%.2f' % (Planet['pressure'][num_core_layers+num_mantle_layers] / 10000), "GPa"
+        if number_h2o_layers >0:
+            print ("WMB pressure", '%.2f' % (Planet['pressure'][num_core_layers+num_mantle_layers] / 10000), "GPa")
         Output_mass.append(Mass_planet)
         Output_radii.append(Planet['radius'][-1]/6371e3)
         Output_CMBP.append(Planet['pressure'][num_core_layers] / 10000)
@@ -161,8 +168,8 @@ if __name__ == "__main__":
     header = 'Mass\tRadius\tCMF\tCRF\tCMB_P[GPa]\tCMB_T[K]'
 
     #Save the file
-    np.savetxt(Output_filename + ".txt", Data, '%.3f', delimiter='\t', newline='\n', comments='# ', header=header)
-    print "Basic Data File saved in ", Output_filename + '.txt'
+    np.savetxt("Data/"+Output_filename + ".csv", Data, '%.3f', delimiter=',', newline='\n', comments='# ', header=header)
+    print ("Basic Data File saved in Data/", Output_filename + '.csv')
 
 
     # If you want the full output, uncomment this line. Warning, your files will get cluttered quickly!
@@ -207,5 +214,5 @@ if __name__ == "__main__":
     ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
     ax4.set_ylim(0., max(Planet['temperature']) + 100)
 
-    plt.show()
+    #plt.show()
     #"""
