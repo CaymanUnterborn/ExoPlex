@@ -2,14 +2,13 @@
 
 ExoPlex is a thermodynamically self-consistent mass-radius-composition calculator. Users input a bulk molar composition and a mass or radius, and ExoPlex will calculate the resulting radius or mass. Additionally it will produce the planet's core mass fraction, interior mineralogy and the pressure, adiabatic temperature, gravity and density profiles as a function of depth. 
 
-
-ExoPlex is python 3 based and requires the following packages:
-numpy
-scipy
-matplotlib
-pexpect
-sympy
-jupyter (for Tutorial)
+ExoPlex is python 3 based and requires the following packages:  
+numpy  
+scipy  
+matplotlib  
+pexpect  
+sympy  
+jupyter (for Tutorial)  
 
 Each of these can be installed using pip.
 
