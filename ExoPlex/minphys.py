@@ -4,6 +4,7 @@ from scipy import interpolate
 import math
 from scipy.integrate import odeint
 import sys
+from ExoPlex import burnman as bm
 
 ToPa = 100000
 ToBar = 1/ToPa
@@ -37,12 +38,10 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     rho_layers = Planet.get('density')
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
 
-    P_mantle = Pressure_layers[num_core_layers:num_core_layers+num_mantle_layers]
     if number_h2o_layers > 0:
         P_points_water = Pressure_layers[(num_mantle_layers+num_core_layers):]
         T_points_water = Temperature_layers[(num_mantle_layers+num_core_layers):]
         water_rho = get_water_rho(P_points_water, T_points_water,grids)
-
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
     core_data = get_core_rho(grids[2], Core_wt_per, P_core, T_core)
@@ -51,10 +50,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
         if i < num_core_layers:
             rho_layers[i] = core_data[i]
 
-    if number_h2o_layers > 0:
-        P_points_water = Pressure_layers[(num_mantle_layers + num_core_layers ):]
-        T_points_water = Temperature_layers[(num_mantle_layers + num_core_layers):]
-        water_rho =  get_water_rho(P_points_water, T_points_water,grids)
 
     P_points_UM = []
     T_points_UM = []
@@ -74,11 +69,14 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     P_points_UM = np.array(P_points_UM)
     T_points_UM = np.array(T_points_UM)
 
-    UM_data = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                   grids[0]['density'], (P_points_UM, T_points_UM), method='linear')
+    interpolator_rho_UM = grids[0]['density']
+    interpolator_rho_LM = grids[1]['density']
 
-    LM_data = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                   grids[1]['density'], (P_points_LM, T_points_LM), method='linear')
+    mesh_UM = np.vstack((P_points_UM, T_points_UM)).T
+    UM_data = interpolator_rho_UM(mesh_UM)
+
+    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
+    LM_data = interpolator_rho_LM(mesh_LM)
 
     to_switch_P = []
     to_switch_T = []
@@ -92,9 +90,8 @@ def get_rho(Planet,grids,Core_wt_per,layers):
             to_switch_index.append(i)
 
     if len(to_switch_P) > 0:
-        test = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                    grids[1]['density'], (to_switch_P, to_switch_T), method='linear')
-
+        mesh_test = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_rho_LM(mesh_test)
         for i in range(len(test)):
 
             if np.isnan(test[i]) == True:
@@ -120,8 +117,10 @@ def get_rho(Planet,grids,Core_wt_per,layers):
             to_switch_index.append(i)
 
     if len(to_switch_P) > 0:
-        test = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                    grids[0]['density'], (to_switch_P, to_switch_T), method='linear')
+
+        mesh_test = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_rho_UM(mesh_test)
+
         for i in range(len(test)):
             if np.isnan(test[i]) == True:
                 print("Density: Pressure and/or Temperature Exceeds Mantle Grids ")
@@ -146,9 +145,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     else:
         rho_layers= np.append(core_data,mantle_data)
 
-
-
-
     return rho_layers
 
 def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
@@ -170,8 +166,11 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
 
     molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS)
 
-    core_rho = interpolate.griddata((grid['pressure'], grid['temperature']),
-                                     grid['density'], (Pressure, Temperature), method='linear')
+
+    interpolator_rho = grid['density']
+
+    mesh_core = np.vstack((Pressure, Temperature)).T
+    core_rho = interpolator_rho(mesh_core)
 
     impo = False
     P_range = []
@@ -185,7 +184,6 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
             index.append(i)
 
     if impo == True:
-        from ExoPlex import burnman as bm
         co = bm.minerals.other.liquid_iron()
         co_den = co.evaluate(['density'],P_range,T_range)[0]
         counter = 0
@@ -212,29 +210,18 @@ def get_water_rho(Pressure,Temperature,grids):
     -------
     density: list
         list of calculated density of water [kg/m^3]
-
-
-    from ExoPlex import burnman
-    class Ice_VII(burnman.Mineral):
-
-        def __init__(self):
-            self.params = {
-                'name': 'ice_VII',
-                'equation_of_state': 'bm2',
-                'V_0': 12.49e-6,
-                'K_0': 20.15e9,
-                'Kprime_0': 4.,
-                'molar_mass': 0.01801528,
-            }
-            burnman.Mineral.__init__(self)
-    rock = Ice_VII()
-    Water_density = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['density'],
-    (Pressure, Temperature), method = 'linear')
     """
 
+    interpolator_rho_water = grids[3]['density']
+
+    mesh_water = np.vstack((Pressure, Temperature)).T
+    Water_density = interpolator_rho_water(mesh_water)
+
+
     for i in range(len(Water_density)):
-        if np.isnan(Water_density[i]) == True and Pressure[i] >= min(grids[3]['pressure']) and Temperature[i] >= min(grids[3]['temperature']):
-            den_noT = rock.evaluate(['density'], Pressure[i]*ToPa, 300)[0]
+        if np.isnan(Water_density[i]) == True and Pressure[i] >= 1 and Temperature[i] >= 300:
+
+            den_noT = bm.minerals.other.Ice_VII().evaluate(['density'], Pressure[i]*ToPa, 300)[0]
             corr = np.exp((Temperature[i]-300)*11.58e-5)
             Water_density[i] = den_noT/corr
 
@@ -242,8 +229,7 @@ def get_water_rho(Pressure,Temperature,grids):
             print("outside of water grid")
             print(Water_density[i])
             print(Pressure[i]/10/1000, "GPa",Temperature[i],"K")
-            print(min((grids[3]['temperature'])),min(grids[3]['pressure']/10/1000))
-            print(max((grids[3]['temperature'])),max(grids[3]['pressure']/10/1000))
+
 
             sys.exit()
 
@@ -269,8 +255,13 @@ def get_water_Cp(Pressure, Temperature,grids):
 
     """
 
-    Water_Cp = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['cp'],
-    (Pressure, Temperature), method = 'linear')
+    interpolator_cp_water = grids[2]['cp']
+
+    mesh_water = np.vstack((Pressure, Temperature)).T
+    Water_Cp = interpolator_cp_water(mesh_water)
+
+    #Water_Cp = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['cp'],
+    #(Pressure, Temperature), method = 'linear')
 
     for i in range(len(Water_Cp)):
         if np.isnan(Water_Cp[i]) == True:
@@ -301,8 +292,12 @@ def get_water_alpha(Pressure,Temperature,grids):
     a0 = -3.9e-4
     a1 = 1.5e-6
 
-    Water_alpha = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['alpha'],
-    (Pressure, Temperature), method = 'linear')
+    interpolator_alpha_water = grids[2]['cp']
+
+    mesh_water = np.vstack((Pressure, Temperature)).T
+    Water_alpha = interpolator_alpha_water(mesh_water)
+
+    #Water_alpha = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['alpha'], (Pressure, Temperature), method = 'linear')
 
     for i in range(len(Water_alpha)):
         if np.isnan(Water_alpha[i]) == True:
@@ -518,15 +513,26 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
             P_points_UM.append(pressure[i+num_core_layers])
             T_points_UM.append(temperature[i+num_core_layers])
 
-    UM_cp_data = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                           grids[0]['cp'],(P_points_UM, T_points_UM), method='linear')
+    interpolator_cp_UM = grids[0]['cp']
+    interpolator_cp_LM = grids[1]['cp']
 
-    LM_cp_data = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                           grids[1]['cp'],(P_points_LM, T_points_LM), method='linear')
+    mesh_UM = np.vstack((P_points_UM, T_points_UM)).T
+    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
+
+    UM_cp_data = interpolator_cp_UM(mesh_UM)
+    LM_cp_data = interpolator_cp_LM(mesh_LM)
+
+
+    interpolator_alpha_UM = grids[0]['alpha']
+    interpolator_alpha_LM = grids[1]['alpha']
+
+    UM_alpha_data = interpolator_alpha_UM(mesh_UM)
+    LM_alpha_data = interpolator_alpha_LM(mesh_LM)
 
     to_switch_P = []
     to_switch_T = []
     to_switch_index = []
+
 
     for i in range(len(UM_cp_data)):
         if np.isnan(UM_cp_data[i]) == True:
@@ -536,8 +542,8 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
             to_switch_index.append(i)
 
     if len(to_switch_P) > 0:
-        test = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                    grids[1]['cp'], (to_switch_P, to_switch_T), method='linear')
+        mesh_switch = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_cp_LM(mesh_switch)
 
         for i in range(len(test)):
 
@@ -561,9 +567,8 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
 
 
     if len(to_switch_P) > 0: #try in upper mantle
-        test = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                    grids[0]['cp'], (to_switch_P, to_switch_T), method='linear')
-
+        mesh_switch = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_cp_UM(mesh_switch)
 
         for i in range(len(test)):
             if np.isnan(test[i]) == True:
@@ -579,12 +584,6 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
             else:
                 LM_cp_data[to_switch_index[i]] = test[i]
 
-    UM_alpha_data = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                           grids[0]['alpha'],(P_points_UM, T_points_UM), method='linear')
-
-    LM_alpha_data = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                           grids[1]['alpha'],(P_points_LM, T_points_LM), method='linear')
-
     to_switch_P = []
     to_switch_T = []
     to_switch_index = []
@@ -596,9 +595,8 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
             to_switch_index.append(i)
 
     if len(to_switch_P) > 0:
-        test = interpolate.griddata((grids[1]['pressure'], grids[1]['temperature']),
-                                    grids[1]['alpha'], (to_switch_P, to_switch_T), method='linear')
-
+        mesh_switch = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_alpha_LM(mesh_switch)
         for i in range(len(test)):
 
             if np.isnan(test[i]) == True:
@@ -618,8 +616,8 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
             to_switch_index.append(i)
 
     if len(to_switch_P) > 0:
-        test = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']),
-                                    grids[0]['alpha'], (to_switch_P, to_switch_T), method='linear')
+        mesh_switch = np.vstack((to_switch_P, to_switch_T)).T
+        test = interpolator_alpha_UM(mesh_switch)
 
         for i in range(len(test)):
             if np.isnan(test[i]) == True:
@@ -676,10 +674,13 @@ def get_temperature(Planet,grids,structural_parameters,layers):
 
     P_core = pressure[:num_core_layers]
     T_core = temperature[:num_core_layers]
-    core_alpha = interpolate.griddata((grids[2]['pressure'], grids[2]['temperature']),
-                                           grids[2]['alpha'],(P_core, T_core), method='linear')
-    core_cp = interpolate.griddata((grids[2]['pressure'], grids[2]['temperature']),
-                                           grids[2]['cp'],(P_core, T_core), method='linear')
+
+    interpolator_alpha_core = grids[2]['alpha']
+    interpolator_cp_core = grids[2]['cp']
+
+    mesh_core = np.vstack((P_core, T_core)).T
+    core_alpha = interpolator_alpha_core(mesh_core)
+    core_cp = interpolator_cp_core(mesh_core)
 
     depths = radii[-1] - radii
 
@@ -707,12 +708,12 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         spec_heat_water = get_water_Cp(P_points_water,T_points_water,grids)
         alpha_water= get_water_alpha(P_points_water,T_points_water,grids)
 
+
         for i in range(len(alpha_water))[::-1]:
             if i < len(alpha_water)-1:
                 if alpha_water[i] > 2*alpha_water[i+1]:
                     dalpha_dr =  (alpha_water[i+1]- alpha_water[i+2])/(depths_water[i+1]-depths_water[i+2])
                     alpha_water[i] =alpha_water[i+1] + (depths_water[i]-depths_water[i+1])*dalpha_dr
-
 
         grav_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], gravity_water[::-1],k=3)
         spec_heat_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], spec_heat_water[::-1],k=3)
@@ -786,7 +787,6 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                 index.append(i)
 
         if impo == True:
-            from ExoPlex import burnman as bm
             co = bm.minerals.other.liquid_iron()
             co_vals = co.evaluate(['thermal_expansivity','molar_heat_capacity_p'], P_range, T_range)
             counter = 0
@@ -829,7 +829,6 @@ def check_convergence(new_rho,old_rho):
          """
 
     delta = ([(1.-(old_rho[i]/new_rho[i])) for i in range(len(new_rho))[1:]])
-    new_rho = [i for i in new_rho]
 
     for i in range(len(delta)):
         if abs(delta[i]) >= pow(10,-3):

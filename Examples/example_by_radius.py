@@ -22,11 +22,13 @@ struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolut
                          'Mantle_potential_temp','water_potential_temp']
 combine_phases = True
 use_grids = True
-verbose = True
 
 import ExoPlex as exo
 
 if __name__ == "__main__":
+    #To have ExoPlex to give you compositional info and status of calculation set Verbose to TRUE.
+    #Note: setting this to True will slightly slow down the program
+    verbose = False
 
     Radius_planet = 1
     #Need to give the run a name. This will be used as the name of the output files
@@ -68,8 +70,8 @@ if __name__ == "__main__":
 
     #lastly we need to decide how many layers to put in the planet. This is the resolution of
     #the mass-radius sampling.
-    num_mantle_layers = 500
-    num_core_layers = 600
+    num_mantle_layers = 300
+    num_core_layers = 300
 
 
 
@@ -112,16 +114,21 @@ if __name__ == "__main__":
     #Planet.get('cp') = list of values of specific heat points from calculation (SI)
 
     print()
-    print("Mass = ", '%.3f'%(Planet['mass'][-1]/5.97e24), "Earth masses")
-    print("Radius = ", '%.5f'%(Planet['radius'][-1]/6371e3), "Earth radii")
-    print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
-    print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
-    print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
-    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]//1e4), "GPa")
-    print("CMB Temperature = " ,'%.2f' % (Planet['temperature'][num_core_layers]), "K")
-    print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
-    print("Central core pressure",'%.2f' % (Planet['pressure'][0]/1e7),"TPa")
-    print("Central core Temperature",'%.2f' % (Planet['temperature'][0]),"K")
+    print("Mass = ", '%.3f' % (Planet['mass'][-1] / 5.97e24), "Earth masses")
+    print("Radius = ", '%.5f' % (Planet['radius'][-1] / 6371e3), "Earth radii")
+    print("Density = ", '%.3f' % (Planet['mass'][-1] / (4 / 3 * np.pi * pow(Planet['radius'][-1], 3)) / 1000), "g/cc")
+    print("Core Mass Fraction = ", '%.2f' % (100. * Planet['mass'][num_core_layers - 1] / Planet['mass'][-1]))
+    print("Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers - 1] / Planet['radius'][-1]))
+    print("CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 1e4), "GPa")
+    print("CMB Temperature = ", '%.2f' % (Planet['temperature'][num_core_layers]), "K")
+    if number_h2o_layers > 0:
+        print("WMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers + num_mantle_layers] // 1e4), "GPa")
+        print("WMB Temperature = ", '%.2f' % (Planet['temperature'][num_core_layers + num_mantle_layers]), "K")
+
+        print("number of oceans:", '%.2f' % (wt_frac_water * Planet['mass'][-1] / 1.4e21))
+    print("Central core pressure", '%.2f' % (Planet['pressure'][0] / 1e7), "TPa")
+    print("Central core Temperature", '%.2f' % (Planet['temperature'][0]), "K")
+    print()
 
     #If you'd like the full output, uncomment out these lines! 
     #Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
@@ -131,7 +138,7 @@ if __name__ == "__main__":
     #Now let us plot
     import matplotlib.pyplot as plt
 
-    figure = plt.figure(figsize=(8, 6.5))
+    figure = plt.figure(figsize=(10, 9))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
     ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)

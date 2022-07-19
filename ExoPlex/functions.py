@@ -1,6 +1,8 @@
 import numpy as np
 import sys
-from scipy import interpolate
+
+from scipy.spatial import Delaunay
+from scipy.interpolate import LinearNDInterpolator
 
 from ExoPlex import planet as planet
 ToPa = 100000.
@@ -280,11 +282,16 @@ def make_core_grid(use_high,verbose):
     temperature_grid = np.array([row[1] for row in grid])
     density_grid = np.array([row[2] for row in grid])
     alpha_grid = [pow(10,row[3]) for row in grid]
-
     cp_grid = [row[4] for row in grid]
 
-    keys = ['temperature','pressure','density','alpha','cp']
-    return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid]))
+    PT = np.vstack((pressure_grid, temperature_grid)).T
+    tri_PT = Delaunay(PT)  # Compute the triangulation
+    interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
+    interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
+    interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
+
+    keys = ['density','alpha','cp']
+    return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP]))
 
 def make_water_grid():
 
@@ -299,24 +306,37 @@ def make_water_grid():
             start+=1
 
     start = 1
+    phase_grid = []
+
 
     data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns-1))
-    phase_grid = []
+    header = temp_file[0].strip('\n').split(',')
+    Phases = header[5:]
+
+
+    grid = np.zeros((num_rows, num_columns))
     for i in range(num_rows):
         # for j in range(num_columns):
         columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns[:-1]]
-        phase_grid.append(columns[-1])
+        grid[i] = [float(j) for j in columns]
 
     pressure_grid = np.array([row[0] for row in grid])
     temperature_grid = np.array([row[1] for row in grid])
     density_grid = np.array([row[2] for row in grid])
-    alpha_grid = [pow(10.,row[4]) for row in grid]
-    cp_grid = [row[3] for row in grid]
+    cp_grid = np.array([row[3] for row in grid])
+    alpha_grid = np.array([row[4] for row in grid])
+    phase_grid =  np.array([100*row[5:] for row in grid])
 
-    keys = ['temperature','pressure','density','alpha','cp','phases']
-    return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid,phase_grid]))
+    PT = np.vstack((pressure_grid, temperature_grid)).T
+    tri_PT = Delaunay(PT)  # Compute the triangulation
+    interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
+    interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
+    interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
+    interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
+
+    keys = ['density', 'alpha', 'cp', 'phases']
+
+    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])),Phases
 
 def make_mantle_grid(Mantle_filename,UMLM,use_grids):
     """
@@ -342,6 +362,8 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
 
     """
 
+
+    #Use ExoPlex pre-made grid
     if use_grids==True:
         if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')
@@ -386,10 +408,19 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         cp_grid = [row[4] for row in grid]
         phase_grid = [row[5:-1] for row in grid]
 
-        #write function for calculating cp and alpha grids
-        keys = ['temperature','pressure','density','alpha','cp','phases']
-        return dict(zip(keys,[temperature_grid,pressure_grid,density_grid,alpha_grid,cp_grid,phase_grid])),Phases
+        PT = np.vstack((pressure_grid, temperature_grid)).T
+        tri_PT = Delaunay(PT)  # Compute the triangulation
+        interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
+        interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
+        interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
+        interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
+
+        keys = ['density','alpha','cp','phases']
+
+        return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP,interpolator_phases])),Phases
+
     else:
+        #Use PerPlex derived grid
         if UMLM == True:
             file = open(Mantle_filename + '_UM_results.txt', 'r')
         else:
@@ -420,15 +451,20 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         temperature_grid = [row[0] for row in grid]
         pressure_grid = [row[1] for row in grid]
         density_grid = [row[2] for row in grid]
-        speed_grid = [[0, 0, 0] for row in grid]
         alpha_grid = [row[3] for row in grid]
         cp_grid = [row[4] for row in grid]
         phase_grid = [row[5:] for row in grid]
 
+        PT = np.vstack((pressure_grid, temperature_grid)).T
+        tri_PT = Delaunay(PT)  # Compute the triangulation
+        interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
+        interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
+        interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
+        interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
 
-        keys = ['temperature', 'pressure', 'density', 'speeds', 'alpha', 'cp', 'phases']
-        return dict(zip(keys, [temperature_grid, pressure_grid, density_grid, speed_grid, alpha_grid, cp_grid,
-                               phase_grid])), Phases
+        keys = ['density', 'alpha', 'cp', 'phases']
+
+        return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])), Phases
 
 def get_phases(Planet,grids,layers,combine_phases):
     """
@@ -460,16 +496,27 @@ def get_phases(Planet,grids,layers,combine_phases):
 
     P_points_UM = []
     T_points_UM = []
+    P_points_LM = []
+    T_points_LM = []
     for i in range(len(mantle_pressures)):
         if mantle_pressures[i]<=1250000.:
             P_points_UM.append(mantle_pressures[i])
             T_points_UM.append(mantle_temperatures[i])
+        else:
+            P_points_LM.append(mantle_pressures[i])
+            T_points_LM.append(mantle_temperatures[i])
 
+    interpolator_phase_UM = grids[0]['phases']
+    interpolator_phase_LM = grids[1]['phases']
 
-    Mantle_phases_UM = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']), grids[0]['phases'],
-                         (P_points_UM, T_points_UM), method='linear')
+    mesh_UM = np.vstack((P_points_UM, T_points_UM)).T
+    Mantle_phases_UM = interpolator_phase_UM(mesh_UM)
 
-    Mantle_phases_LM = [grids[0]['phases'][-1] for i in range(num_mantle_layers-len(P_points_UM))]
+    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
+    Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
+
+    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
+    Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
 
     if (num_mantle_layers-len(P_points_UM)) > 0:
         Mantle_phases = np.concatenate((Mantle_phases_LM,Mantle_phases_UM),axis=0)
@@ -486,76 +533,51 @@ def get_phases(Planet,grids,layers,combine_phases):
 
 
     if number_h2o_layers>0:
-        Phases = np.zeros((len(Planet['pressure']),len(Mantle_phases[0])+8))
+        interpolator_phase_water = grids[3]['phases']
+
+        water_P = Planet['pressure']
+        water_T = Planet['temperature']
+
+        mesh_water = np.vstack((water_P, water_T)).T
+        Water_phases = interpolator_phase_water(mesh_water)
+
+
+        for i in range(len(Water_phases)):
+            for j in range(len(Water_phases[i])):
+                if np.isnan(Water_phases[i][j])==True:
+                    Water_phases[i][j]=0
+
+        Core_phases = np.asarray([[100] for i in range(num_core_layers)])
+        rest = np.asarray([[0] for i in range((num_mantle_layers+number_h2o_layers))])
+        Core_phases = np.vstack((Core_phases,rest))
+
+        man_core = np.asarray([np.zeros(len(Mantle_phases[0])) for i in range(num_core_layers)])
+        man_wat = np.asarray([np.zeros(len(Mantle_phases[0])) for i in range(number_h2o_layers)])
+
+        Mantle_phases = np.vstack((man_core, Mantle_phases, man_wat))
+
+        Phases = np.zeros(shape=(sum(layers),len(Mantle_phases[0])+len(Core_phases[0])+len(Water_phases[0])))
     else:
-        Phases = np.zeros((len(Planet['pressure']),len(Mantle_phases[0])+1))
+        Core_phases = np.asarray([[100] for i in range(num_core_layers)])
+        rest = np.asarray([[0] for i in range((num_mantle_layers))])
+        Core_phases = np.vstack((Core_phases, rest))
 
-    Core_phases = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']), grids[0]['phases'],
-                         ([0 for i in range(num_core_layers)], [0 for i in range(num_core_layers)]), method='linear')
-    dummy =[]
-    for i in Core_phases:
-        line = []
-        for j in i:
-            line.append(0.)
-        dummy.append(line)
-    Core_phases = dummy
+        man_core = np.asarray([np.zeros(len(Mantle_phases[0])) for i in range(num_core_layers)])
 
-    if number_h2o_layers >0:
-        Water_phases = interpolate.griddata((grids[0]['pressure'], grids[0]['temperature']), grids[0]['phases'],
-                         ([0 for i in range(number_h2o_layers)], [0 for i in range(number_h2o_layers)]), method='linear')
-        Phases[0:num_core_layers,0:len(Mantle_phases[0])] = Core_phases
-        Phases[num_core_layers:(num_mantle_layers+num_core_layers),0:len(Mantle_phases[0])] = Mantle_phases
-        Phases[(num_mantle_layers+num_core_layers):num_core_layers+num_mantle_layers+number_h2o_layers,0:len(Mantle_phases[0])] = Water_phases
+        Mantle_phases = np.vstack((man_core, Mantle_phases))
+        Phases = np.zeros(shape=(sum(layers),len(Mantle_phases[0])+len(Core_phases[0])))
 
-    else:
-        Phases[0:num_core_layers, 0:len(Mantle_phases[0])] = Core_phases
 
-        Phases[num_core_layers:(num_mantle_layers + num_core_layers), 0:len(Mantle_phases[0])] = Mantle_phases
 
-    if number_h2o_layers > 0:
-        P_wat=[]
-        T_wat = []
-        for i in range(len(Phases)):
-            if i >= (num_mantle_layers + num_core_layers):
-                P_wat.append(Planet['pressure'][i])
-                T_wat.append(Planet['temperature'][i])
+    for i in range(sum(layers)):
+        if number_h2o_layers > 0:
+            Phases[i] = np.hstack((Mantle_phases[i],Core_phases[i],Water_phases[i]))
+        else:
+            Phases[i] = np.hstack((Mantle_phases[i],Core_phases[i]))
 
-        phase_water = find_water_phase(P_wat,T_wat,grids)
-
-        for i in range(len(Phases)):
-            if i < num_core_layers-1:
-
-                Phases[i][len(Mantle_phases[0]):] =[100, float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
-            elif i < (num_mantle_layers+num_core_layers):
-
-                 Phases[i][len(Mantle_phases[0]):] =[0,0,0,0,0,0,0,0]
-            else:
-                water_phase = phase_water[i-num_core_layers-num_mantle_layers]
-                if water_phase == 'water1':
-                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), 100, float('NaN'), float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
-                elif water_phase == 'Ih':
-                    Phases[i][len(Mantle_phases[0]):] =[float('NaN'), float('NaN'), 100, float('NaN'),float('NaN'),float('NaN'), float('NaN'),float('NaN')]
-                elif water_phase == 'II':
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), 100,float('NaN'),float('NaN'), float('NaN'),float('NaN')]
-                elif water_phase == 'III':
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'),  float('NaN'),100,float('NaN'), float('NaN'),float('NaN')]
-                elif water_phase == 'V':
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'), 100,float('NaN'), float('NaN')]
-                elif water_phase == 'VI':
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'), 100, float('NaN')]
-                else:
-                    Phases[i][len(Mantle_phases[0]):] = [float('NaN'), float('NaN'), float('NaN'), float('NaN'),float('NaN'),float('NaN'),float('NaN'), 100]
-
-    else:
-        for i in range(len(Phases)):
-            if i < num_core_layers:
-                Phases[i][len(Mantle_phases[0]):] = 100.
-            else:
-                Phases[i][len(Mantle_phases[0]):] = 0.
     phase_names = Planet['phase_names']
 
     if combine_phases == True:
-        Phases = np.asarray(Phases)
         solutions = {'c2/c':'c2c_ss', 'fc2/c':'c2c_ss', 'per':'ferropericlase', 'wus': 'ferropericlase', 'aperov':'perovskite', 'fperov':'perovskite','perov':'perovskite',
         'ab':'plagioclase','an':'plagioclase','sp':'spinel','herc':'spinel', 'fo':'olivine', 'fa':'olivine', 'wad':'wadslyite','fwad':'wadslyite',
         'ring':'ringwoodite','fring':'ringwoodite','odi':'orthopyroxene','en':'orthopyroxene', 'fs':'orthopyroxene','ts':'orthopyroxene',
@@ -595,14 +617,8 @@ def get_phases(Planet,grids,layers,combine_phases):
         Phases = np.array(final_output)
     else:
         new_names = phase_names
+
     return Phases, new_names
-
-def find_water_phase(Pressure, Temperature,grids):
-
-    Water_phases = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['phases'],
-    (Pressure, Temperature), method = 'nearest')
-
-    return Water_phases
 
 def write(Planet,filename):
     """
@@ -821,53 +837,63 @@ def find_filename(compositional_params,verbose):
     return filename
 
 def check(Planet):
-    for k in range(len(Planet['temperature']) - 1):
-        if Planet['temperature'][k] < Planet['temperature'][k + 1] or Planet['density'][k] < Planet['density'][k + 1]:
-            print("something is wrong at index: ",k)
-            print("If true it is in the temperature determination",Planet['temperature'][k] < Planet['temperature'][k + 1])
-            print("If true it is in the density determination", Planet['density'][k] < Planet['density'][k + 1])
-            print("If true it is in the pressure determination", Planet['pressure'][k] < Planet['pressure'][k + 1])
+    def monotonic(x):
+        dx = np.diff(x)
+        return np.all(dx <= 0) or np.all(dx >= 0)
+    T_test = monotonic(Planet['temperature'])
+    P_test = monotonic(Planet['pressure'])
+    rho_test = monotonic(Planet['density'])
+    plot = False
+    if T_test == False:
+        print("Temperature is not monotonic, thus an error. Will plot.")
+        plot = True
+    if P_test == False:
+        print("Pressure is not monotonic, thus an error. Will plot.")
+        plot = True
+    if rho_test == False:
+        print("density is not monotonic, thus an error. Will plot.")
+        plot = True
 
-            print("Plotting to show the error")
-            import matplotlib.pyplot as plt
+    if plot == True:
+        import matplotlib.pyplot as plt
+        figure = plt.figure(figsize=(10, 9))
 
-            figure = plt.figure(figsize=(8, 6.5))
+        ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
+        ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
+        ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
+        ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
 
-            ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
-            ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
-            ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
-            ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
+        ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
+        ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
+        ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
+        ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
+        ax1.minorticks_on()
+        text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
+        ax1.text(0.05, 0.95, text)
 
-            ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
-            ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
-            ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
-            ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
-            ax1.minorticks_on()
-            text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
-            ax1.text(0.05, 0.95, text)
+        # Make a subplot showing the calculated pressure profile
+        ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
+        ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
+        ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
+        ax2.set_ylabel("Pressure (GPa)")
+        ax2.minorticks_on()
 
-            # Make a subplot showing the calculated pressure profile
-            ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
-            ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
-            ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
-            ax2.set_ylabel("Pressure (GPa)")
-            ax2.minorticks_on()
+        # Make a subplot showing the calculated gravity profile
+        ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
+        ax3.set_ylabel("Gravity (m/s$^2)$")
+        ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
+        ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
+        ax3.minorticks_on()
 
-            # Make a subplot showing the calculated gravity profile
-            ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
-            ax3.set_ylabel("Gravity (m/s$^2)$")
-            ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
-            ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
-            ax3.minorticks_on()
+        # Make a subplot showing the calculated temperature profile
+        ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
+        ax4.set_ylabel("Temperature ($K$)")
+        ax4.set_xlabel("Radius (km)")
+        ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
+        ax4.set_ylim(0., max(Planet['temperature']) + 300)
+        ax4.minorticks_on()
 
-            # Make a subplot showing the calculated temperature profile
-            ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
-            ax4.set_ylabel("Temperature ($K$)")
-            ax4.set_xlabel("Radius (km)")
-            ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
-            ax4.set_ylim(0., max(Planet['temperature']) + 300)
-            ax4.minorticks_on()
+        plt.show()
+        sys.exit()
 
-            plt.show()
-            sys.exit()
 

@@ -38,9 +38,8 @@ def initialize_by_mass(*args):
     """
     from ExoPlex import burnman as bm
 
-    rock = bm.Composite([bm.minerals.SLB_2011.mg_perovskite(),
-                         bm.minerals.SLB_2011.periclase()], \
-                        [0.8, 0.2])
+    rock = bm.minerals.other.mg_perovskite()
+
     ice = bm.minerals.other.water()
     mass_planet = args[0]
     structural_params = args[1]
@@ -135,8 +134,11 @@ def initialize_by_mass(*args):
 
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
-    rho_core = interpolate.griddata((core_grid['pressure'], core_grid['temperature']),
-                                            core_grid['density'], (P_core, T_core), method='linear')
+
+    interpolator_rho = core_grid['density']
+
+    mesh_core = np.vstack((P_core, T_core)).T
+    rho_core = interpolator_rho(mesh_core)
     for i in range(num_layers):
         if i < num_core_layers:
                 mass_layers[i] = core_mass/(num_core_layers)

@@ -17,6 +17,41 @@ from ..utils.chemistry import dictionarize_formula, formula_mass
 from .SLB_2011 import periclase, wuestite, mg_perovskite, fe_perovskite
 
 
+class Ice_VII(Mineral):
+
+    def __init__(self):
+        self.params = {
+            'name': 'ice_VII',
+            'equation_of_state': 'bm2',
+            'V_0': 12.49e-6,
+            'K_0': 20.15e9,
+            'Kprime_0': 4.,
+            'molar_mass': 0.01801528,
+        }
+        Mineral.__init__(self)
+
+class mg_perovskite (Mineral): #special mineral for initialization, not good data for use elsewhere!
+
+    def __init__(self):
+        formula = 'MgSiO3'
+        formula = dictionarize_formula(formula)
+        self.params = {
+            'name': 'Mg_Perovskite',
+            'formula': formula,
+            'equation_of_state': 'bm2',
+            'F_0': -1368283.0,
+            'V_0': 2.4445e-05,
+            'K_0': 2.505264e+11,
+            'Kprime_0': 4.14,
+            'Debye_0': 905.9412,
+            'grueneisen_0': 1.56508,
+            'q_0': 1.10945,
+            'G_0': 1.729e+11,
+            'Gprime_0': 1.69037,
+            'eta_s_0': 2.56536,
+            'n': sum(formula.values()),
+            'molar_mass': formula_mass(formula)}
+        Mineral.__init__(self)
 
 class liquid_iron( Mineral ):
     """

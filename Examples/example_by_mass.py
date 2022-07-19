@@ -26,11 +26,13 @@ struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolut
                          'Mantle_potential_temp','water_potential_temp']
 combine_phases = True
 use_grids = True
-verbose = True
 
 import ExoPlex as exo
 
 if __name__ == "__main__":
+    #To have ExoPlex to give you compositional info and status of calculation set Verbose to TRUE.
+    #Note: setting this to True will slightly slow down the program
+    verbose = False
 
     Mass_planet = 1  # in Earth masses
     #create filename to store values
@@ -123,12 +125,16 @@ if __name__ == "__main__":
     print("Density = ",'%.3f'%(Planet['mass'][-1]/(4/3 * np.pi *pow(Planet['radius'][-1],3))/1000), "g/cc")
     print("Core Mass Fraction = ", '%.2f'%(100.*Planet['mass'][num_core_layers-1]/Planet['mass'][-1]))
     print("Core Radius Fraction = ", '%.2f'%(100.*Planet['radius'][num_core_layers-1]/Planet['radius'][-1]))
-    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]//1e4), "GPa")
+    print("CMB Pressure = " ,'%.2f' % (Planet['pressure'][num_core_layers]/1e4), "GPa")
     print("CMB Temperature = " ,'%.2f' % (Planet['temperature'][num_core_layers]), "K")
-    print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
+    if number_h2o_layers >0:
+        print("WMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers+num_mantle_layers] // 1e4), "GPa")
+        print("WMB Temperature = ", '%.2f' % (Planet['temperature'][num_core_layers+num_mantle_layers]), "K")
+
+        print("number of oceans:",'%.2f' % (wt_frac_water*Planet['mass'][-1]/1.4e21))
     print("Central core pressure",'%.2f' % (Planet['pressure'][0]/1e7),"TPa")
     print("Central core Temperature",'%.2f' % (Planet['temperature'][0]),"K")
-
+    print()
     #If you'd like the full output, uncomment out these lines!
     #Output_filename = Output_filename + '_Radius_'+ str('%.2f'%(Planet['radius'][-1]/6371e3))
     #exo.functions.write(Planet,Output_filename)
@@ -136,7 +142,7 @@ if __name__ == "__main__":
     #Now let us plot
     import matplotlib.pyplot as plt
 
-    figure = plt.figure(figsize=(8, 6.5))
+    figure = plt.figure(figsize=(10, 9))
 
     ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
     ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
