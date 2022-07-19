@@ -125,14 +125,9 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
-        names.append('water')
-        names.append('ice_Ih')
-        names.append('ice_II')
-        names.append('ice_III')
-        names.append('ice_V')
-        names.append('ice_VI')
-        names.append('ice_VII')
-        water_grid = functions.make_water_grid()
+        water_grid, water_phases = functions.make_water_grid()
+        for i in water_phases:
+            names.append(i)
     else:
         water_grid = []
 
