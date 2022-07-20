@@ -11,6 +11,7 @@
 # solution properties from a set of endmember formulae
 
 from __future__ import absolute_import
+import os
 import re
 import numpy as np
 from fractions import Fraction
@@ -25,12 +26,9 @@ def read_masses():
     A simple function to read a file with a two column list of
     elements and their masses into a dictionary
     """
-    datastream = pkgutil.get_data(
-        'burnman', '/Users/ctunterborn/Desktop/ExoPlex/ExoPlex/burnman/data/input_masses/atomic_masses.dat')
 
-    file = '/Users/ctunterborn/Desktop/ExoPlex/ExoPlex/burnman/data/input_masses/atomic_masses.dat'
+    file = os.getcwd().strip('Examples')+'ExoPlex/burnman/data/input_masses/atomic_masses.dat'
     datalines = open(file).readlines()
-
 
     lookup = dict()
     for line in datalines:
