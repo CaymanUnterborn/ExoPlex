@@ -25,7 +25,8 @@ def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
     return mol_frac_Fe_mantle
 
-def get_Si_core_w_FeO(compositional_params):
+def get_Si_core_w_FeO(compositional_params, verbose):
+
 
     FeMg = compositional_params.get('FeMg')
     SiMg = compositional_params.get('SiMg')
@@ -37,7 +38,8 @@ def get_Si_core_w_FeO(compositional_params):
     conserve_oxy = compositional_params.get('conserve_oxy')
 
     if conserve_oxy == True and  wt_fe_m > 0 and wt_frac_Si_core >0:
-        print("Please note this will over-write your choice of wt% Si in core since O is conserved")
+        if verbose ==True:
+            print("Please note this will over-write your choice of wt% Si in core since O is conserved")
         m_feo = mO+mFe
         OTR = mMg + CaMg*mCa + AlMg*mAl + mO*(1+CaMg + 1.5*AlMg)
 
@@ -48,16 +50,13 @@ def get_Si_core_w_FeO(compositional_params):
 
         return(wt_frac_Si_core,mol_frac_Fe_mantle)
 
-    elif wt_fe_m > 0 and wt_frac_Si_core >0:
-        print("Please note that you have FeO but are not conserving oxygen by placing Si into the core")
+    else:
+        if verbose ==True:
+            print("Please note that you have FeO or Si in the core but are not conserving oxygen")
+
         mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
 
-        return(0, mol_frac_Fe_mantle)
-    else:
-        if wt_frac_Si_core > 0:
-            print("Please note, this model has Si in the core but no FeO")
-
-        return(wt_frac_Si_core,0)
+        return(wt_frac_Si_core, mol_frac_Fe_mantle)
 
 
 def get_percents(compositional_params,verbose):
@@ -104,8 +103,7 @@ def get_percents(compositional_params,verbose):
     #Sum of all masses = 100 g
     b = np.array([0., 0. , 0. , 0. ,  0. , 0. , 0 , 0.,0., 100.])
 
-    wt_frac_Si_core, mol_frac_Fe_mantle = get_Si_core_w_FeO(compositional_params)
-
+    wt_frac_Si_core, mol_frac_Fe_mantle = get_Si_core_w_FeO(compositional_params,verbose)
 
 ############################################################################################
 
@@ -243,20 +241,13 @@ def get_percents(compositional_params,verbose):
         print("Core Mass Percent = ", '%.3f'%(core_mass_frac*100.))
         print()
 
+
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
 
-def make_core_grid(use_high,verbose):
+def make_core_grid():
 
-    if use_high == True:
-        if verbose == True:
-            print("Using coarser high FeO Core grid: liquid_iron_grid_highfeo.dat")
-        file = open('../Solutions_Small/liquid_iron_grid_highfeo.dat')
-
-    else:
-        if verbose == True:
-            print("Using normal Core grid: liquid_iron_grid.dat")
-        file = open('../Solutions_Small/liquid_iron_grid_highfeo.dat')
+    file = open('../Solutions_Small/liquid_iron_grid.dat')
 
     temp_file = file.readlines()
     num_rows = len(temp_file[1:])
