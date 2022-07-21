@@ -176,9 +176,6 @@ if __name__ == "__main__":
 
     Planets = pool.map_async(calc_planet,Mass_planet).get()
 
-
-    for i in range(len(Planets)):
-        print("M",round(Mass_planet[i],2),"R",round(Planets[i].get('radius'),2))
     pool.close()
 
 
