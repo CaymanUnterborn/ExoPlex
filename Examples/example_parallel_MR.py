@@ -3,6 +3,15 @@
 # Copyright (C) 2017 - by the ExoPlex team, released under the GNU
 # GPL v2 or later.
 
+
+"""
+This example uses parallel processing to quickly calculate the best fit Fe/Mg and CMF for a planet with a given
+Mass, Radius and their respective uncertainties.
+
+The code begins by initializing the composition of the planet and retrieving the grids. In the main text code (at bottom)
+one can set the number of samplings and the mass, radius, and uncertainties.
+"""
+
 import os
 import sys
 from scipy.stats import norm
@@ -11,7 +20,9 @@ import multiprocessing as mp
 import statistics
 import scipy.stats as sp
 from scipy.optimize import root_scalar
+import ExoPlex as exo
 
+from ExoPlex import run_perplex
 # hack to allow scripts to be placed in subdirectories next to exoplex:
 import numpy as np
 
@@ -32,17 +43,11 @@ struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolut
 combine_phases = True
 use_grids = True
 
-import ExoPlex as exo
-
-from ExoPlex import run_perplex
 
 # To have ExoPlex to give you compositional info and status of calculation set Verbose to TRUE.
 # Note: setting this to True will slightly slow down the program
 verbose = False
 
-# create filename to store values
-
-Output_filename = 'Filename'
 # Next user must input the ratios by mole (Earth is Ca/Mg = .07, Si.Mg = 0.90, Al/Mg = 0.09, Fe/Mg = 0.9)
 CaMg = 0.07
 SiMg = 0.9
@@ -151,51 +156,13 @@ def calc_planet(mass, radius):
             #return very high FeMg
 
             return(95)
-            #return (dict(zip(keys, vals)))
 
         if test > 0:
             #planet with largest core produces radius too big
             #return very low FeMg
             return(1e-6)
-            #return (dict(zip(keys, vals)))
     else:
-        """
-        compositional_params = dict(
-            zip(comp_keys, [wt_frac_water, FeMg, SiMg, CaMg, AlMg, wt_frac_FeO_wanted, wt_frac_Si_core, \
-                            wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids, conserve_oxy]))
-        filename = exo.functions.find_filename(compositional_params, verbose)
-        Planet = exo.run_planet_mass(mass, compositional_params, structure_params, layers, filename, verbose)
-
-        exo.functions.check(Planet)
-        rad = Planet['radius'][-1]/6371e3
-        mass = Planet['mass'][-1]/5.97e24
-        CMF =  Planet['mass'][num_core_layers - 1] / Planet['mass'][-1]
-        CRF =  Planet['radius'][num_core_layers - 1] / Planet['radius'][-1]
-        CMB_P = Planet['pressure'][num_core_layers] / 1e4
-        CMB_T = Planet['temperature'][num_core_layers]
-
-        if number_h2o_layers > 0:
-            WMB_P = Planet['pressure'][num_core_layers + num_mantle_layers] / 1e4
-            WMB_T = Planet['temperature'][num_core_layers + num_mantle_layers]
-
-        P_cen = Planet['pressure'][0] / 1e7
-        T_cen = Planet['temperature'][0]
-
-        if number_h2o_layers > 0:
-            WMB_P = Planet['pressure'][num_core_layers + num_mantle_layers] / 1e4
-            WMB_T = Planet['temperature'][num_core_layers + num_mantle_layers]
-            keys = ['radius','mass','CMF','CRF','CMB_P','CMB_T','P_cen', 'T_cen','WMB_P','WMB_T']
-            vals = [rad, mass, CMF, CRF, CMB_P, CMB_T, P_cen, T_cen, WMB_P, WMB_T]
-            return(dict(zip(keys, vals)))
-
-        else:
-            keys = ['radius','mass','CMF','CRF','CMB_P','CMB_T','P_cen', 'T_cen']
-            vals = [rad, mass, CMF, CRF, CMB_P, CMB_T, P_cen, T_cen]
-            return(dict(zip(keys, vals)))
-        """
         return(FeMg)
-
-
 
 if __name__ == "__main__":
     num_pts = 1000
@@ -205,9 +172,6 @@ if __name__ == "__main__":
     R_err =0.05
     M = 1
     M_err = .1
-
-    #Mass_planet = sp.truncnorm.rvs(a=-1,b=1,loc= M, scale= M_err, size=num_pts)
-    #Radius_planet = sp.truncnorm.rvs(a=-1,b=1,loc= R, scale= R_err, size=num_pts)
 
     Mass_planet = np.random.normal(M, M_err, num_pts)
 

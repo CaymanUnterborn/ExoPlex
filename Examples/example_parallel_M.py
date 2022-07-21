@@ -3,10 +3,19 @@
 # Copyright (C) 2017 - by the ExoPlex team, released under the GNU
 # GPL v2 or later.
 
+"""
+This example uses parallel processing to quickly calculate the best fit radius and pressure, temperature and density profiles
+for a planet of a given mass, its uncertainty and a chosen composition.
+
+The code begins by initializing the composition of the planet and retrieving the grids. In the main text code (at bottom)
+one can set the number of samplings and the mass, radius, and uncertainties.
+
+"""
+
 import os
 import sys
 import multiprocessing as mp
-
+import matplotlib.pyplot as plt
 
 # hack to allow scripts to be placed in subdirectories next to exoplex:
 import numpy as np
@@ -117,10 +126,7 @@ Mantle_filename = exo.run_perplex.run_perplex(*[Mantle_wt_per,compositional_para
                                              structure_params.get('resolution_LM')],filename,verbose,False])
 grids_high = exo.functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
 
-if core_mass_frac < 0.5:
-    core_grid = exo.functions.make_core_grid(False,verbose)
-elif Mantle_wt_per.get('FeO') > 5:
-    core_grid = exo.functions.make_core_grid(True,verbose)
+core_grid = exo.functions.make_core_grid()
 
 grids = [grids_low,grids_high,core_grid,water_grid]
 
@@ -163,14 +169,22 @@ if __name__ == "__main__":
     num_pts = 5
     M = 2.49
     M_err = 0.425
+
     Mass_planet = np.random.normal(M, M_err, num_pts)
 
     pool = mp.Pool(processes=mp.cpu_count())
 
     Planets = pool.map_async(calc_planet,Mass_planet).get()
 
+
     for i in range(len(Planets)):
         print("M",round(Mass_planet[i],2),"R",round(Planets[i].get('radius'),2))
     pool.close()
+
+
+    plt.scatter(Mass_planet, [Planets[i].get('radius') for i in range(num_pts)])
+    plt.ylabel('Radius (Earth Radii)', size=20)
+    plt.xlabel('Mass (Earth Masses)', size=20)
+    plt.show()
 
 
