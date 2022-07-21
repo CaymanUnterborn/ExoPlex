@@ -54,9 +54,12 @@ def get_Si_core_w_FeO(compositional_params, verbose):
         if verbose ==True:
             print("Please note that you have FeO or Si in the core but are not conserving oxygen")
 
-        mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
+        if wt_fe_m > 0:
+            mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
 
-        return(wt_frac_Si_core, mol_frac_Fe_mantle)
+            return(wt_frac_Si_core, mol_frac_Fe_mantle)
+        else:
+            return(wt_frac_Si_core,0)
 
 
 def get_percents(compositional_params,verbose):
