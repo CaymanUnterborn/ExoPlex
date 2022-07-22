@@ -11,17 +11,21 @@ The code begins by initializing the composition of the planet and retrieving the
 one can set the number of samplings and the mass, radius, and uncertainties.
 
 """
-
 import os
 import sys
 import multiprocessing as mp
+import numpy as np
 import matplotlib.pyplot as plt
 
 # hack to allow scripts to be placed in subdirectories next to exoplex:
-import numpy as np
 
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
+
+from ExoPlex import functions
+
+from ExoPlex import run_perplex as perp
+
 Pressure_range_mantle_UM = '1 1400000'
 Temperature_range_mantle_UM = '1600 3500'
 
@@ -37,10 +41,6 @@ struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolut
                          'Mantle_potential_temp','water_potential_temp']
 combine_phases = True
 use_grids = True
-
-import ExoPlex as exo
-
-from ExoPlex import run_perplex
 
 # To have ExoPlex to give you compositional info and status of calculation set Verbose to TRUE.
 # Note: setting this to True will slightly slow down the program
@@ -98,7 +98,7 @@ compositional_params = dict(zip(comp_keys, [wt_frac_water, FeMg, SiMg, CaMg, AlM
                                             wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids, conserve_oxy]))
 
 if use_grids == True:
-    filename = exo.functions.find_filename(compositional_params, verbose)
+    filename = functions.find_filename(compositional_params, verbose)
 else:
     filename = ''
 
@@ -108,36 +108,36 @@ structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM, Temperature_
 
 layers = [num_mantle_layers, num_core_layers, number_h2o_layers]
 
-Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = exo.functions.get_percents(compositional_params, verbose)
-Mantle_filename = exo.run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
+Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params, verbose)
+Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
                                                 structure_params.get('resolution_UM')],filename,verbose,combine_phases])
-grids_low, names = exo.functions.make_mantle_grid(Mantle_filename,True,use_grids)
+grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
 names.append('Fe')
 if layers[-1] > 0:
-    water_grid, water_phases = exo.functions.make_water_grid()
+    water_grid, water_phases = functions.make_water_grid()
     for i in water_phases:
         names.append(i)
 else:
     water_grid = []
 
-Mantle_filename = exo.run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
+Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
                                             [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
                                              structure_params.get('resolution_LM')],filename,verbose,False])
-grids_high = exo.functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
 
-core_grid = exo.functions.make_core_grid()
+core_grid = functions.make_core_grid()
 
 grids = [grids_low,grids_high,core_grid,water_grid]
 
 def calc_planet(x):
 
 
-    Planet = exo.functions.find_Planet_mass(x, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+    Planet = functions.find_Planet_mass(x, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
     Planet['phase_names'] = names
-    Planet['phases'],Planet['phase_names'] = exo.functions.get_phases(Planet, grids, layers,combine_phases)
+    Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,combine_phases)
 
-    exo.functions.check(Planet)
+    functions.check(Planet)
     rad = Planet['radius'][-1]/6371e3
     mass = Planet['mass'][-1]/5.97e24
     CMF =  Planet['mass'][num_core_layers - 1] / Planet['mass'][-1]
@@ -166,9 +166,9 @@ def calc_planet(x):
 
 
 if __name__ == "__main__":
-    num_pts = 5
-    M = 2.49
-    M_err = 0.425
+    num_pts = 100
+    M = 1
+    M_err = 0
 
     Mass_planet = np.random.normal(M, M_err, num_pts)
 

@@ -1,10 +1,8 @@
 
 import numpy as np
-from scipy import interpolate
-import math
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
 from scipy.integrate import odeint
 import sys
-from ExoPlex import burnman as bm
 
 ToPa = 100000
 ToBar = 1/ToPa
@@ -184,7 +182,9 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
             index.append(i)
 
     if impo == True:
-        co = bm.minerals.other.liquid_iron()
+        from ExoPlex.burnman import minerals
+
+        co = minerals.other.liquid_iron()
         co_den = co.evaluate(['density'],P_range,T_range)[0]
         counter = 0
         for i in index:
@@ -217,11 +217,14 @@ def get_water_rho(Pressure,Temperature,grids):
     mesh_water = np.vstack((Pressure, Temperature)).T
     Water_density = interpolator_rho_water(mesh_water)
 
-
+    impo = False
     for i in range(len(Water_density)):
         if np.isnan(Water_density[i]) == True and Pressure[i] >= 1 and Temperature[i] >= 300:
-
-            den_noT = bm.minerals.other.Ice_VII().evaluate(['density'], Pressure[i]*ToPa, 300)[0]
+            if impo == False:
+                from ExoPlex.burnman import minerals
+                impo = True
+            
+            den_noT = minerals.other.Ice_VII().evaluate(['density'], Pressure[i]*ToPa, 300)[0]
             corr = np.exp((Temperature[i]-300)*11.58e-5)
             Water_density[i] = den_noT/corr
 
@@ -332,19 +335,19 @@ def get_gravity(Planet,layers):
 
         radii_core = radii[:num_core_layers]
         density_core = density[:num_core_layers]
-        rhofunc_core = interpolate.InterpolatedUnivariateSpline(radii_core, density_core,k=3)
+        rhofunc_core = spline(radii_core, density_core,k=3)
         poisson_core = lambda p, x: 4.0 * np.pi * G * rhofunc_core(x) * x * x
         gravity_layers_core = np.ravel(odeint(poisson_core, 0., radii_core))
 
         radii_rock = radii[num_core_layers:num_core_layers+num_mantle_layers]
         density_rock = density[num_core_layers:num_core_layers+num_mantle_layers]
-        rhofunc_rock = interpolate.InterpolatedUnivariateSpline(radii_rock, density_rock,k=3)
+        rhofunc_rock = spline(radii_rock, density_rock,k=3)
         poisson_rock = lambda p, x: 4.0 * np.pi * G * rhofunc_rock(x) * x * x
         gravity_layers_rock = np.ravel(odeint(poisson_rock, gravity_layers_core[-1], radii_rock))
 
         radii_water = radii[num_core_layers+num_mantle_layers:]
         density_water = density[num_core_layers+num_mantle_layers:]
-        rhofunc_water = interpolate.InterpolatedUnivariateSpline(radii_water, density_water,k=3)
+        rhofunc_water = spline(radii_water, density_water,k=3)
         poisson_water = lambda p, x: 4.0 * np.pi * G * rhofunc_water(x) * x * x
         gravity_layers_water = np.ravel(odeint(poisson_water,gravity_layers_rock[-1],radii_water))
 
@@ -360,7 +363,7 @@ def get_gravity(Planet,layers):
         radii_core = radii[:num_core_layers]
         density_core = density[:num_core_layers]
 
-        rhofunc_core = interpolate.InterpolatedUnivariateSpline(radii_core, density_core,k=4)
+        rhofunc_core = spline(radii_core, density_core,k=4)
         poisson_core = lambda p, x: 4.0 * np.pi * G * rhofunc_core(x) * x * x
         gravity_layers_core = np.ravel(odeint(poisson_core, 0., radii_core))
 
@@ -368,7 +371,7 @@ def get_gravity(Planet,layers):
         density_rock = density[num_core_layers:num_core_layers+num_mantle_layers]
 
 
-        rhofunc_rock = interpolate.InterpolatedUnivariateSpline(radii_rock, density_rock,k=4)
+        rhofunc_rock = spline(radii_rock, density_rock,k=4)
         poisson_rock = lambda p, x: 4.0 * np.pi * G * rhofunc_rock(x) * x * x
         gravity_layers_rock = np.ravel(odeint(poisson_rock, gravity_layers_core[-1], radii_rock))
 
@@ -422,22 +425,22 @@ def get_pressure(Planet,layers):
         gravity_water = gravity[num_core_layers + num_mantle_layers:]
         density_water = density[num_core_layers + num_mantle_layers:]
 
-        rhofunc_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], density_water[::-1], k=4)
-        gfunc_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], gravity_water[::-1], k=4)
+        rhofunc_water = spline(depths_water[::-1], density_water[::-1], k=4)
+        gfunc_water = spline(depths_water[::-1], gravity_water[::-1], k=4)
         p_func = lambda p, x: gfunc_water(x) * rhofunc_water(x)
 
         pressure_water = np.ravel(odeint(p_func, 1e5, depths_water[::-1]))
 
         WMB_pres = pressure_water[-1]
 
-        rhofunc_mant = interpolate.InterpolatedUnivariateSpline(depths_mant[::-1], density_mant[::-1])
-        gfunc_mant = interpolate.InterpolatedUnivariateSpline(depths_mant[::-1], gravity_mant[::-1])
+        rhofunc_mant = spline(depths_mant[::-1], density_mant[::-1])
+        gfunc_mant = spline(depths_mant[::-1], gravity_mant[::-1])
         p_func = lambda p, x: gfunc_mant(x) * rhofunc_mant(x)
 
         pressure_mant = np.ravel(odeint(p_func, WMB_pres, depths_mant[::-1]))
 
-        rhofunc_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], density_core[::-1], k=5)
-        gfunc_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], gravity_core[::-1], k=5)
+        rhofunc_core = spline(depths_core[::-1], density_core[::-1], k=5)
+        gfunc_core = spline(depths_core[::-1], gravity_core[::-1], k=5)
 
         p_func = lambda p, x: gfunc_core(x) * rhofunc_core(x)
         pressure_core = np.ravel(odeint(p_func, pressure_mant[-1] , depths_core[::-1]))
@@ -448,16 +451,16 @@ def get_pressure(Planet,layers):
         return pressure[::-1]
     else:
 
-        rhofunc_mant = interpolate.InterpolatedUnivariateSpline(depths_mant[::-1], density_mant[::-1],k=4)
+        rhofunc_mant = spline(depths_mant[::-1], density_mant[::-1],k=4)
 
-        gfunc_mant = interpolate.InterpolatedUnivariateSpline(depths_mant[::-1], gravity_mant[::-1],k=4)
+        gfunc_mant = spline(depths_mant[::-1], gravity_mant[::-1],k=4)
         p_func = lambda p, x: gfunc_mant(x) * rhofunc_mant(x)
 
 
         pressure_mant = np.ravel(odeint(p_func, 1e5, depths_mant[::-1]))
 
-        rhofunc_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], density_core[::-1],k=4)
-        gfunc_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], gravity_core[::-1],k=4)
+        rhofunc_core = spline(depths_core[::-1], density_core[::-1],k=4)
+        gfunc_core = spline(depths_core[::-1], gravity_core[::-1],k=4)
         p_func = lambda p, x: gfunc_core(x) * rhofunc_core(x)
 
         pressure_core = np.ravel(odeint(p_func, pressure_mant[-1], depths_core[::-1]))
@@ -715,16 +718,16 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                     dalpha_dr =  (alpha_water[i+1]- alpha_water[i+2])/(depths_water[i+1]-depths_water[i+2])
                     alpha_water[i] =alpha_water[i+1] + (depths_water[i]-depths_water[i+1])*dalpha_dr
 
-        grav_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], gravity_water[::-1],k=3)
-        spec_heat_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], spec_heat_water[::-1],k=3)
-        alpha_func_water = interpolate.InterpolatedUnivariateSpline(depths_water[::-1], alpha_water[::-1],k=3)
+        grav_func_water = spline(depths_water[::-1], gravity_water[::-1],k=3)
+        spec_heat_func_water = spline(depths_water[::-1], spec_heat_water[::-1],k=3)
+        alpha_func_water = spline(depths_water[::-1], alpha_water[::-1],k=3)
 
 
         adiabat_water = lambda p, x: alpha_func_water(x) * grav_func_water(x) / spec_heat_func_water(x)
 
         gradient_water = np.ravel(odeint(adiabat_water,0., depths_water[::-1]))
 
-        temperatures_water = [math.exp(i)*Water_potential_temp for i in gradient_water][::-1]
+        temperatures_water = [np.exp(i)*Water_potential_temp for i in gradient_water][::-1]
 
         for i in range(len(alpha_mant))[::-1]:
             if i < len(alpha_mant)-1:
@@ -732,9 +735,9 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                     dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
                     alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
 
-        grav_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], gravity_mantle[::-1], k=5)
-        spec_heat_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], spec_heat_mantle[::-1], k=5)
-        alpha_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], alpha_mant[::-1], k=5)
+        grav_func_mant = spline(depths_mantle[::-1], gravity_mantle[::-1], k=5)
+        spec_heat_func_mant = spline(depths_mantle[::-1], spec_heat_mantle[::-1], k=5)
+        alpha_func_mant = spline(depths_mantle[::-1], alpha_mant[::-1], k=5)
 
 
         wmb_pressure = pressure[num_core_layers+num_mantle_layers]/10/1000
@@ -742,17 +745,17 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         adiabat_mant = lambda p, x: alpha_func_mant(x) * grav_func_mant(x) / spec_heat_func_mant(x)
 
         gradient_mant = np.ravel(odeint(adiabat_mant, starting_grad, depths_mantle[::-1]))
-        temperatures_mant = [math.exp(i) * Mantle_potential_temp for i in gradient_mant][::-1]
+        temperatures_mant = [np.exp(i) * Mantle_potential_temp for i in gradient_mant][::-1]
 
-        grav_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], gravity_core[::-1], k=5)
-        spec_heat_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], core_cp[::-1], k=5)
-        alpha_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], core_alpha[::-1], k=5)
+        grav_func_core = spline(depths_core[::-1], gravity_core[::-1], k=5)
+        spec_heat_func_core = spline(depths_core[::-1], core_cp[::-1], k=5)
+        alpha_func_core = spline(depths_core[::-1], core_alpha[::-1], k=5)
 
         adiabat_core = lambda p, x: alpha_func_core(x) * grav_func_core(x) / spec_heat_func_core(x)
 
         gradient_core = np.ravel(odeint(adiabat_core, 0., depths_core[::-1]))
 
-        temperatures_core = [math.exp( i) * temperatures_mant[0] for i in gradient_core][::-1]
+        temperatures_core = [np.exp( i) * temperatures_mant[0] for i in gradient_core][::-1]
 
         temperatures = np.concatenate((temperatures_core,temperatures_mant,temperatures_water),axis=0)
 
@@ -765,15 +768,15 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                     dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
                     alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
 
-        grav_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], gravity_mantle[::-1],k=4)
-        spec_heat_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], spec_heat_mantle[::-1],k=4)
-        alpha_func_mant = interpolate.InterpolatedUnivariateSpline(depths_mantle[::-1], alpha_mant[::-1],k=4)
+        grav_func_mant = spline(depths_mantle[::-1], gravity_mantle[::-1],k=4)
+        spec_heat_func_mant = spline(depths_mantle[::-1], spec_heat_mantle[::-1],k=4)
+        alpha_func_mant = spline(depths_mantle[::-1], alpha_mant[::-1],k=4)
 
         adiabat_mant = lambda p, x: alpha_func_mant(x) * grav_func_mant(x) / spec_heat_func_mant(x)
 
         gradient_mant = np.ravel(odeint(adiabat_mant, 0., depths_mantle[::-1]))
 
-        temperatures_mant = [math.exp(k) * Mantle_potential_temp for k in gradient_mant][::-1]
+        temperatures_mant = [np.exp(k) * Mantle_potential_temp for k in gradient_mant][::-1]
         impo = False
         P_range = []
         T_range = []
@@ -787,7 +790,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                 index.append(i)
 
         if impo == True:
-            co = bm.minerals.other.liquid_iron()
+            co = minerals.other.liquid_iron()
             co_vals = co.evaluate(['thermal_expansivity','molar_heat_capacity_p'], P_range, T_range)
             counter = 0
             for i in index:
@@ -796,14 +799,14 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                 counter += 1
 
 
-        grav_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], gravity_core[::-1],k=3)
-        spec_heat_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], core_cp[::-1],k=3)
-        alpha_func_core = interpolate.InterpolatedUnivariateSpline(depths_core[::-1], core_alpha[::-1],k=3)
+        grav_func_core = spline(depths_core[::-1], gravity_core[::-1],k=3)
+        spec_heat_func_core = spline(depths_core[::-1], core_cp[::-1],k=3)
+        alpha_func_core = spline(depths_core[::-1], core_alpha[::-1],k=3)
 
         adiabat_core = lambda p, x: alpha_func_core(x) * grav_func_core(x) / spec_heat_func_core(x)
 
         gradient_core = np.ravel(odeint(adiabat_core, 0., depths_core[::-1]))
-        temperatures_core = [math.exp(k) * temperatures_mant[0] for k in gradient_core][::-1]
+        temperatures_core = [np.exp(k) * temperatures_mant[0] for k in gradient_core][::-1]
 
         temperatures = np.concatenate((temperatures_core,temperatures_mant),axis=0)
 
