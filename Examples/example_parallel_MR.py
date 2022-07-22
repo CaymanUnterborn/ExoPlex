@@ -20,14 +20,16 @@ import multiprocessing as mp
 import statistics
 import scipy.stats as sp
 from scipy.optimize import root_scalar
-import ExoPlex as exo
 
-from ExoPlex import run_perplex
 # hack to allow scripts to be placed in subdirectories next to exoplex:
 import numpy as np
 
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
+
+from ExoPlex import functions
+from ExoPlex import run_perplex as perp
+
 Pressure_range_mantle_UM = '1 1400000'
 Temperature_range_mantle_UM = '1600 3500'
 
@@ -97,7 +99,7 @@ compositional_params = dict(zip(comp_keys, [wt_frac_water, FeMg, SiMg, CaMg, AlM
                                             wt_frac_O_core, wt_frac_S_core, combine_phases, use_grids, conserve_oxy]))
 
 if use_grids == True:
-    filename = exo.functions.find_filename(compositional_params, verbose)
+    filename = functions.find_filename(compositional_params, verbose)
 else:
     filename = ''
 
@@ -107,25 +109,25 @@ structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM, Temperature_
 
 layers = [num_mantle_layers, num_core_layers, number_h2o_layers]
 
-Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = exo.functions.get_percents(compositional_params, verbose)
-Mantle_filename = exo.run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
+Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params, verbose)
+Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
                                                 structure_params.get('resolution_UM')],filename,verbose,combine_phases])
-grids_low, names = exo.functions.make_mantle_grid(Mantle_filename,True,use_grids)
+grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
 names.append('Fe')
 if layers[-1] > 0:
-    water_grid, water_phases = exo.functions.make_water_grid()
+    water_grid, water_phases = functions.make_water_grid()
     for i in water_phases:
         names.append(i)
 else:
     water_grid = []
 
-Mantle_filename = exo.run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
+Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
                                             [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
                                              structure_params.get('resolution_LM')],filename,verbose,False])
-grids_high = exo.functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
 
-core_grid = exo.functions.make_core_grid()
+core_grid = functions.make_core_grid()
 
 grids = [grids_low,grids_high,core_grid,water_grid]
 
@@ -133,9 +135,9 @@ grids = [grids_low,grids_high,core_grid,water_grid]
 def run_planet(x, *args):
     Mass_planet, Rad_planet = args
     compositional_params['FeMg'] = x
-    Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = exo.functions.get_percents(compositional_params, verbose)
+    Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params, verbose)
 
-    Planet = exo.functions.find_Planet_mass(Mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+    Planet = functions.find_Planet_mass(Mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
     out = 1 - (Planet['radius'][-1] / 6371e3) / Rad_planet
     return (out)
 
@@ -194,7 +196,7 @@ if __name__ == "__main__":
     for i in range(len(FeMg)):
         if FeMg[i] >0:
             compositional_params['FeMg'] = FeMg[i]
-            CMF.append(exo.functions.get_percents(compositional_params,verbose)[3])
+            CMF.append(functions.get_percents(compositional_params,verbose)[3])
         else:
             CMF.append(FeMg[i])
 
