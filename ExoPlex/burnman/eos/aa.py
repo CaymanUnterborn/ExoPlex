@@ -195,7 +195,7 @@ class AA(eos.EquationOfState):
         _volume = lambda V, P, T, params: ( P -
                                             self.pressure(T, V, params) )
 
-        return brentq(_volume, params['V_0']*0.01, params['V_0']*2.5, args=(pressure, temperature, params))
+        return brentq(_volume, params['V_0'] * 0.1, params['V_0'] * 2., args=(pressure, temperature, params))
 
     def pressure( self, temperature, volume, params):
         """
@@ -223,8 +223,8 @@ class AA(eos.EquationOfState):
         S = self.entropy(0., temperature, volume, params)
 
         delta_S = lambda T, S, V: S - self.entropy(0., T, V, params)
-        T0 = brentq(delta_S, temperature*0.3, temperature*1.5, args=(S, volume - 0.5*dV),maxiter=1000)
-        T1 = brentq(delta_S, temperature*0.3, temperature*1.5, args=(S, volume + 0.5*dV),maxiter=1000)
+        T0 = brentq(delta_S, temperature * 0.98, temperature * 1.02, args=(S, volume - 0.5 * dV))
+        T1 = brentq(delta_S, temperature * 0.98, temperature * 1.02, args=(S, volume + 0.5 * dV))
 
         E0 = self.molar_internal_energy(0., T0, volume - 0.5*dV, params)
         E1 = self.molar_internal_energy(0., T1, volume + 0.5*dV, params)

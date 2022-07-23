@@ -45,14 +45,14 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     """
 
     Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
-    combine_phases = compositional_params.get('combine_phases')
+    get_phases = compositional_params.get('combine_phases')
 
     use_grids = compositional_params.get('use_grids')
 
     #Run fine mesh grid
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
-                                                structure_params.get('resolution_UM')],filename,verbose,combine_phases])
+                                                structure_params.get('resolution_UM')],filename,verbose,get_phases])
     grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
@@ -77,6 +77,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
 
     Planet['phase_names'] = names
+
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)
 
     return Planet

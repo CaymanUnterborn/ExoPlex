@@ -19,8 +19,8 @@ mAl = 26.981
 
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
 
-    mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((55.845 + 15.999)  * FeMg)) * (
-                SiMg * 28.0855 + AlMg * 26.9815 + CaMg * 40.078 + 24.305 + 15.999 * (
+    mol_frac_Fe_mantle = ((wt_frac_FeO_wanted / ((mFe + mO)  * FeMg)) * (
+                SiMg * mSi + AlMg * mAl + CaMg * mCa + mMg + mO * (
                     2 * SiMg + 1.5 * AlMg + CaMg + 1))) / (1 - wt_frac_FeO_wanted)
 
     return mol_frac_Fe_mantle
@@ -52,8 +52,8 @@ def get_Si_core_w_FeO(compositional_params, verbose):
 
     else:
         if verbose ==True:
-            print("Please note that you have FeO or Si in the core but are not conserving oxygen")
-
+            if wt_fe_m > 0 or wt_frac_Si_core> 0:
+                print("Please note that you have FeO or Si in the core but are not conserving oxygen")
         if wt_fe_m > 0:
             mol_frac_Fe_mantle = get_FeO(wt_fe_m,FeMg, SiMg, AlMg, CaMg)
 
@@ -675,7 +675,7 @@ def calc_planet_radius(mass_guess,args):
     if verbose == True:
         print("Trying mass: ", round(mass_guess,5), "Earth masses")
     Planet = planet.initialize_by_mass(
-        *[mass_guess, structure_params, compositional_params, layers, core_mass_frac, grids])
+        *[mass_guess, structure_params, compositional_params, layers, core_mass_frac])
 
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
     if verbose == True:
@@ -717,10 +717,10 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     den_guess = 1000 * (2.43 + 3.39 * radius_planet)  # From Weiss and Marcy, 2013
 
     #Mass = brentq(calc_planet_radius, 0.5*mass_guess,  1.3*mass_guess, args=args, xtol=1e-5)
-    Mass = brentq(calc_planet_radius, .2,  13.5, args=args, xtol=1e-5)
+    Mass = brentq(calc_planet_radius, .2,  13., args=args, xtol=1e-5)
 
     Planet = planet.initialize_by_mass(
-        *[Mass, structure_params, compositional_params, layers, core_mass_frac, grids])
+        *[Mass, structure_params, compositional_params, layers, core_mass_frac])
 
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
 
@@ -754,7 +754,7 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
 
     """
 
-    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac,grids])
+    Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
 
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
 
