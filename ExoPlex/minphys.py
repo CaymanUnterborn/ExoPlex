@@ -33,7 +33,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     """
     Pressure_layers = Planet.get('pressure')
     Temperature_layers = Planet.get('temperature')
-    rho_layers = Planet.get('density')
+    rho_layers = np.zeros(sum(layers))
     num_mantle_layers, num_core_layers, number_h2o_layers = layers
 
     if number_h2o_layers > 0:
@@ -95,9 +95,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
             if np.isnan(test[i]) == True:
                 print("Density: Pressure and/or Temperature Exceeds Mantle Grids ")
 
-                print (to_switch_P[i]/10/1000, "GPa", to_switch_T[i] ,"K")
-                print("Grid max:", max(grids[1]['pressure'])/10/1000, "GPa",  max(grids[1]['temperature']),"K")
-                print("Grid min:", min(grids[1]['pressure'])/10/1000, "GPa",  min(grids[1]['temperature']),"K")
+                print ("P", to_switch_P[i]/10/1000, "GPa \ ", "T", to_switch_T[i] ,"K")
 
                 sys.exit()
             else:
@@ -123,16 +121,15 @@ def get_rho(Planet,grids,Core_wt_per,layers):
             if np.isnan(test[i]) == True:
                 print("Density: Pressure and/or Temperature Exceeds Mantle Grids ")
 
-                print (to_switch_P[i]/10/1000, "GPa", to_switch_T[i] ,"K")
-                print("Grid max:", max(grids[1]['pressure'])/10/1000, "GPa",  max(grids[1]['temperature']),"K")
-                print("Grid min:", min(grids[1]['pressure'])/10/1000, "GPa",  min(grids[1]['temperature']),"K")
+                print ("P", to_switch_P[i]/10/1000, "GPa \ ", "T", to_switch_T[i] ,"K")
+
 
                 sys.exit()
             else:
                 LM_data[to_switch_index[i]] = test[i]
 
     mantle_data = np.append(LM_data, UM_data)
-
+    P_mantle = Pressure_layers[num_core_layers:num_core_layers+num_mantle_layers]
     for i in range(len(mantle_data)-1)[::-1]:
         if mantle_data[i+1] > mantle_data[i]:
             drhodP = (mantle_data[i+1]-mantle_data[i+2])/(P_mantle[i+1]-P_mantle[i+2])
@@ -263,9 +260,6 @@ def get_water_Cp(Pressure, Temperature,grids):
     mesh_water = np.vstack((Pressure, Temperature)).T
     Water_Cp = interpolator_cp_water(mesh_water)
 
-    #Water_Cp = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['cp'],
-    #(Pressure, Temperature), method = 'linear')
-
     for i in range(len(Water_Cp)):
         if np.isnan(Water_Cp[i]) == True:
             Water_Cp[i] = 1000 * (3.3 + 22.1 * np.exp(-0.058 * Pressure[i]/10/1000)) #wants GPA
@@ -299,8 +293,6 @@ def get_water_alpha(Pressure,Temperature,grids):
 
     mesh_water = np.vstack((Pressure, Temperature)).T
     Water_alpha = interpolator_alpha_water(mesh_water)
-
-    #Water_alpha = interpolate.griddata((grids[3]['pressure'], grids[3]['temperature']), grids[3]['alpha'], (Pressure, Temperature), method = 'linear')
 
     for i in range(len(Water_alpha)):
         if np.isnan(Water_alpha[i]) == True:
