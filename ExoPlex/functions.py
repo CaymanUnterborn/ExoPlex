@@ -15,6 +15,7 @@ mO = 15.9994
 mS = 32.0650
 mCa = 40.078
 mAl = 26.981
+range_FeO = np.array([0., .02, .04, .06, .08, .1, .15, .20])
 
 
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
@@ -37,7 +38,7 @@ def get_Si_core_w_FeO(compositional_params, verbose):
 
     conserve_oxy = compositional_params.get('conserve_oxy')
 
-    if conserve_oxy == True and  wt_fe_m > 0 and wt_frac_Si_core >0:
+    if conserve_oxy == True:
         if verbose ==True:
             print("Please note this will over-write your choice of wt% Si in core since O is conserved")
         m_feo = mO+mFe
@@ -332,7 +333,186 @@ def make_water_grid():
 
     return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])),Phases
 
-def make_mantle_grid(Mantle_filename,UMLM,use_grids):
+def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
+    test = Mantle_filename.split('_')
+    Ca = float(test[1].split('/')[1].split('Ca')[0])
+    Al = float(test[3].split('Al')[0])
+    Si = float(test[4].split('Si')[0])
+
+    mu_bar = Ca * (mCa + mO) + Al * (mAl + 1.5 * mO) + Si * (mSi + 2 * mO) + (mMg + mO)
+
+    FeO_act = Mantle_wt_per.get('FeO') / 100
+    mol_Fe_act = (mu_bar / (mFe + mO)) * (-1 + 1 / (1 - FeO_act))
+
+    FeO_file_1 = float('%.02f' % (range_FeO[(np.abs(range_FeO - FeO_act)).argmin()]))
+    FeO_file_1_id = int(np.where(range_FeO == FeO_file_1)[0])
+    if FeO_act > FeO_file_1:
+
+        FeO_file_2_id = FeO_file_1_id + 1
+        test[-1] = str(format(range_FeO[FeO_file_1_id], '.2f')) + 'Fe'
+        filename_down = '_'.join(test)
+        test[-1] = str(format(range_FeO[FeO_file_2_id], '.2f')) + 'Fe'
+        filename_up = '_'.join(test)
+        X_wt_up = (FeO_act - range_FeO[FeO_file_1_id]) / (range_FeO[FeO_file_2_id] - range_FeO[FeO_file_1_id])
+        mol_Fe_down = (mu_bar / (mO + mFe)) * (-1 + (1 / (1 - range_FeO[FeO_file_1_id])))
+        mol_Fe_up = (mu_bar / (mO + mFe)) * (-1 + (1 / (1 - range_FeO[FeO_file_2_id])))
+
+    else:
+        FeO_file_2_id = FeO_file_1_id - 1
+        test[-1] = str(format(range_FeO[FeO_file_1_id], '.2f')) + 'Fe'
+        filename_up = '_'.join(test)
+        test[-1] = str(format(range_FeO[FeO_file_2_id], '.2f')) + 'Fe'
+        filename_down = '_'.join(test)
+        X_wt_up = (FeO_act - range_FeO[FeO_file_2_id]) / (range_FeO[FeO_file_1_id] - range_FeO[FeO_file_2_id])
+        mol_Fe_down = (mu_bar / (mO + mFe)) * (-1 + (1 / (1 - range_FeO[FeO_file_2_id])))
+        mol_Fe_up = (mu_bar / (mO + mFe)) * (-1 + (1 / (1 - range_FeO[FeO_file_1_id])))
+
+    FeO_mol_per_up = (mol_Fe_up) / (1 + mol_Fe_up)
+    FeO_mol_per_down = (mol_Fe_down) / (1 + mol_Fe_down)
+    FeO_mol_per_act = (mol_Fe_act) / (1 + mol_Fe_act)
+
+    X_mol_up = (FeO_mol_per_act - FeO_mol_per_down) / (FeO_mol_per_up - FeO_mol_per_down)
+
+    assert X_mol_up >= 0 and X_wt_up > 0, "Problem"
+
+    if UMLM == True:
+        file_1 = open(filename_up + '_UM_results.txt', 'r')
+        file_2 = open(filename_down + '_UM_results.txt', 'r')
+        P_up = 1390000
+        P_down = 1
+        T_up = 3300
+        T_down = 1500
+    else:
+        file_1 = open(filename_up + '_LM_results.txt', 'r')
+        file_2 = open(filename_down + '_LM_results.txt', 'r')
+        P_up = 27000000.0
+        P_down = 1250000.0
+        T_up = 6800
+        T_down = 1750
+
+    temp_file = file_1.readlines()
+    num_rows = len(temp_file[1:])
+    num_columns = len(temp_file[12].split(','))
+    start = 1
+
+    for i in temp_file[1:]:
+        if i[0] == '#':
+            num_rows = num_rows - 1
+            start += 1
+
+    header = temp_file[0].strip('\n').split(',')
+
+    Phases = header[5:-1]
+    for i in range(len(Phases)):
+        Phases[i] = Phases[i].strip()
+
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns))
+
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns]
+
+    ##
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns))
+
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns]
+
+    num_phases = len(grid[0][5:]) - 1
+
+    temperature_grid_up = np.array([row[1] for row in grid])
+    pressure_grid_up = np.array([row[0] for row in grid])
+    density_grid_up = np.array([X_wt_up * row[2] * 1000 for row in grid])
+    alpha_grid_up = [X_mol_up * pow(10, row[3]) for row in grid]
+    cp_grid_up = [X_wt_up * row[4] for row in grid]
+    phase_grid_up = [X_mol_up * row[5:-1] for row in grid]
+
+    PT = np.vstack((pressure_grid_up, temperature_grid_up)).T
+    tri_PT = Delaunay(PT)  # Compute the triangulation
+    interpolator_rho_up = LinearNDInterpolator(tri_PT, np.array(density_grid_up))
+    interpolator_alpha_up = LinearNDInterpolator(tri_PT, np.array(alpha_grid_up))
+    interpolator_CP_up = LinearNDInterpolator(tri_PT, np.array(cp_grid_up))
+    interpolator_phases_up = LinearNDInterpolator(tri_PT, np.array(phase_grid_up))
+
+    ##
+    temp_file = file_2.readlines()
+    num_rows = len(temp_file[1:])
+    num_columns = len(temp_file[12].split(','))
+    start = 1
+
+    for i in temp_file[1:]:
+        if i[0] == '#':
+            num_rows = num_rows - 1
+            start += 1
+
+    header = temp_file[0].strip('\n').split(',')
+
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns))
+
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns]
+
+        ##
+    data = temp_file[start:]
+    grid = np.zeros((num_rows, num_columns))
+
+    for i in range(num_rows):
+        # for j in range(num_columns):
+        columns = data[i].strip('\n').split(',')
+        grid[i] = [float(j) for j in columns]
+
+    temperature_grid_down = np.array([row[1] for row in grid])
+    pressure_grid_down = np.array([row[0] for row in grid])
+    density_grid_down = np.array([(1 - X_wt_up) * row[2] * 1000 for row in grid])
+    alpha_grid_down = [(1 - X_mol_up) * pow(10, row[3]) for row in grid]
+    cp_grid_down = [(1 - X_wt_up) * row[4] for row in grid]
+    phase_grid_down = [(1 - X_mol_up) * row[5:-1] for row in grid]
+
+    PT = np.vstack((pressure_grid_down, temperature_grid_down)).T
+    tri_PT = Delaunay(PT)  # Compute the triangulation
+    interpolator_rho_down = LinearNDInterpolator(tri_PT, np.array(density_grid_down))
+    interpolator_alpha_down = LinearNDInterpolator(tri_PT, np.array(alpha_grid_down))
+    interpolator_CP_down = LinearNDInterpolator(tri_PT, np.array(cp_grid_down))
+    interpolator_phases_down = LinearNDInterpolator(tri_PT, np.array(phase_grid_down))
+
+    n_pts = 55
+    dP = P_up - P_down
+    dT = T_up - T_down
+
+    P_new = np.hstack([[P_down + (dP / (n_pts - 1)) * j for i in range(n_pts)] for j in range(n_pts)])
+
+    T_new = np.hstack([T_down + (dT / (n_pts - 1)) * j for i in range(n_pts) for j in range(n_pts)])
+
+    # T_new = np.vstack(np.asarray([np.vstack([[1400+((3100-1400)/n_pts)*j] for i in range(n_pts)] for j in  range(n_pts)]))
+
+    mesh = np.vstack((P_new, T_new)).T
+    rho = interpolator_rho_up(mesh) + interpolator_rho_down(mesh)
+
+    alpha = interpolator_alpha_up(mesh) + interpolator_alpha_down(mesh)
+    Cp = interpolator_CP_up(mesh) + interpolator_CP_down(mesh)
+    phases = interpolator_phases_up(mesh) + interpolator_phases_down(mesh)
+    phases = np.asarray([[phases[j][i] / sum(phases[j]) for i in range(num_phases)] for j in range(len(phases))])
+
+    PT = np.vstack((P_new, T_new)).T
+    tri_PT = Delaunay(PT)  # Compute the triangulation
+    interpolator_rho = LinearNDInterpolator(tri_PT, rho)
+    interpolator_alpha = LinearNDInterpolator(tri_PT, alpha)
+    interpolator_CP = LinearNDInterpolator(tri_PT, Cp)
+    interpolator_phases = LinearNDInterpolator(tri_PT, phases)
+
+    keys = ['density', 'alpha', 'cp', 'phases']
+
+    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])), Phases
+
+def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
     """
     This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
     by ExoPlex integrators
@@ -355,15 +535,20 @@ def make_mantle_grid(Mantle_filename,UMLM,use_grids):
         Keys include: 'temperature','pressure','density','alpha','cp','phases'
 
     """
-
-
     #Use ExoPlex pre-made grid
     if use_grids==True:
+        in_grid = False
+        if np.where(range_FeO==Mantle_wt_per['FeO']/100)[0] > -1:
+            in_grid = True
+
+        if Mantle_wt_per.get('FeO') > 0 and in_grid == False:
+            return(make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM))
+
+
         if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')
         else:
             file = open(Mantle_filename+'_LM_results.txt','r')
-
         temp_file = file.readlines()
         num_rows = len(temp_file[1:])
         num_columns = len(temp_file[12].split(','))
@@ -814,7 +999,7 @@ def find_filename(compositional_params,verbose):
     SiMg_file = range_SiMg[(np.abs(range_SiMg - SiMg)).argmin()]
     CaMg_file = range_CaMg[(np.abs(range_CaMg - CaMg)).argmin()]
     AlMg_file = range_AlMg[(np.abs(range_AlMg - AlMg)).argmin()]
-    FeO_file = str('%.02f' % (range_FeO[(np.abs(range_FeO - FeO)).argmin()]))
+    FeO_file = str('%.02f'% FeO)
 
     if SiMg_file >= 1.1:
         SiMg_file = '%.1f'%(SiMg_file)

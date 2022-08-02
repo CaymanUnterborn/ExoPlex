@@ -53,7 +53,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
                                                 structure_params.get('resolution_UM')],filename,verbose,get_phases])
-    grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
+    grids_low, names = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per, True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
         names.append('water')
@@ -69,7 +69,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
                                                  structure_params.get('resolution_LM')],filename,verbose,False])
-    grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+    grids_high = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
 
     core_grid = functions.make_core_grid()
 
@@ -120,7 +120,7 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
                                                 structure_params.get('resolution_UM')],filename,verbose,get_phases])
-    grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
+    grids_low, names = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
         water_grid, water_phases = functions.make_water_grid()
@@ -132,7 +132,7 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
                                                 [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
                                                  structure_params.get('resolution_LM')],filename,verbose,False])
-    grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+    grids_high = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
 
     core_grid = functions.make_core_grid()
 

@@ -81,36 +81,39 @@ def run_perplex(*args):
     if use_grids == False:
         filename = solutionFileNameMan
 
-
-    if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
-        if verbose == True:
-            print ('The Upper mantle .tab already exists\n')
-        return '../Solutions_Small/' + filename
-
-    if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
-        if verbose == True:
-            print ('The Lower mantle .tab already exists\n')
-        return '../Solutions_Small/' + filename
-
     else:
-        if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
-            filename = solutionFileNameMan
-            if verbose == True:
-                print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
-            return '../Calc_Solutions/' + filename
 
-        if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_LM_results.txt') == True and UMLM == False:
-            filename = solutionFileNameMan
+        check_FeO = float(filename.split('_')[-1].split('Fe')[0])
+        if check_FeO <= 0.2 and check_FeO >0:
+            test = filename.split('_')
+            test[-1] = '0.15Fe'
+            filename = '_'.join(test)
+        if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
             if verbose == True:
-                print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
-            return '../Calc_Solutions/' + filename
+                print ('The Upper mantle .tab already exists\n')
+            return '../Solutions_Small/' + filename
+
+        if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
+            if verbose == True:
+                print ('The Lower mantle .tab already exists\n')
+            return '../Solutions_Small/' + filename
+
         else:
-            if  UMLM == True:
+            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
+                filename = solutionFileNameMan
                 if verbose == True:
-                    print ('Making upper mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_UM_results.txt')
+                    print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
+                return '../Calc_Solutions/' + filename
+
+            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_LM_results.txt') == True and UMLM == False:
+                filename = solutionFileNameMan
+                if verbose == True:
+                    print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
+                return '../Calc_Solutions/' + filename
             else:
-                if verbose == True:
-                    print ('Making lower mantle PerPlex phase file. \n This will be stored in: ../Calc_Solutions/'+ filename+'_LM_results.txt')
+                print("You have set use_grids to True but your composition does not exist within the grids.")
+                print("Try again with use_grids = False")
+                sys.exit()
 
     component1 = 'MGO'
     component2 = 'SIO2'
