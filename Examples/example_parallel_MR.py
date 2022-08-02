@@ -134,33 +134,36 @@ def run_planet(x, *args):
     Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params, verbose)
 
     Planet = functions.find_Planet_mass(Mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
-    out = 1 - (Planet['radius'][-1] / 6371e3) / Rad_planet
+    g = 6.67e-11*Mass_planet*5.97e24/(pow(Planet['radius'][-1],2))
+    g_act = 6.67e-11*Mass_planet*5.97e24/(pow(Rad_planet*6371e3,2))
+
+    out = 1 - (g) / g_act
     return (out)
 
 def calc_planet(mass, radius):
     den = mass * 5.97e21 / ((4 * np.pi / 3) * pow((radius * 6371e3),3))
-    min = 0.001
+    min = 1e-10
     if den < 10:
-        max = 10
+        max = 6
     else:
-        max = 80
+        max = 30
 
     try:
         FeMg = root_scalar(run_planet,bracket=[min,max] ,args=(mass, radius),x0 = 0.9,xtol=0.0001).root
     except:
         test = run_planet(min, *(mass, radius))
         if test < 0:
-            #planet with smallest core produces radius too big
-            #return very high FeMg
+            # planet with smallest core produces radius too big
+            # return very high FeMg
 
-            return(95)
+            return (1e-11)
 
         if test > 0:
-            #planet with largest core produces radius too big
-            #return very low FeMg
-            return(1e-6)
+            # planet with largest core produces radius too big
+            # return very low FeMg
+            return (95)
     else:
-        return(FeMg)
+        return (FeMg)
 
 if __name__ == "__main__":
     num_pts = 5
