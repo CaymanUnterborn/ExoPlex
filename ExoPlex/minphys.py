@@ -55,7 +55,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     T_points_LM = []
 
     for i in range(num_mantle_layers):
-        if Pressure_layers[i + num_core_layers] >= 1150000:
+        if Pressure_layers[i + num_core_layers] >= 1250000:
             P_points_LM.append(Pressure_layers[i + num_core_layers])
             T_points_LM.append(Temperature_layers[i + num_core_layers])
         else:
@@ -93,8 +93,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
         for i in range(len(test)):
 
             if np.isnan(test[i]) == True:
-                print("Density: Pressure and/or Temperature Exceeds Mantle Grids ")
-
+                print("Density: Pressure and/or Temperature Exceeds UM Mantle Grids ")
                 print ("P", to_switch_P[i]/10/1000, "GPa \ ", "T", to_switch_T[i] ,"K")
 
                 sys.exit()
@@ -119,8 +118,9 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
         for i in range(len(test)):
             if np.isnan(test[i]) == True:
-                print("Density: Pressure and/or Temperature Exceeds Mantle Grids ")
-
+                print("Density: Pressure and/or Temperature Exceeds LM Mantle Grids ")
+                for i in range(len(to_switch_P)):
+                    print(to_switch_P[i]/10/1000,to_switch_T[i],test[i])
                 print ("P", to_switch_P[i]/10/1000, "GPa \ ", "T", to_switch_T[i] ,"K")
 
 

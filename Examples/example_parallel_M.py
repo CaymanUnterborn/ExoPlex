@@ -23,8 +23,8 @@ if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
     sys.path.insert(1, os.path.abspath('..'))
 
 from ExoPlex import functions
-
 from ExoPlex import run_perplex as perp
+from ExoPlex import make_grids
 
 Pressure_range_mantle_UM = '1 1400000'
 Temperature_range_mantle_UM = '1600 3500'
@@ -109,31 +109,25 @@ structure_params = dict(zip(struct_keys, [Pressure_range_mantle_UM, Temperature_
 layers = [num_mantle_layers, num_core_layers, number_h2o_layers]
 
 Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params, verbose)
-Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
-                                                [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
-                                                structure_params.get('resolution_UM')],filename,verbose,combine_phases])
-grids_low, names = functions.make_mantle_grid(Mantle_filename,True,use_grids)
+Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params, structure_params,filename,verbose,combine_phases])
+grids_low, names = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per, True,use_grids)
 names.append('Fe')
 if layers[-1] > 0:
-    water_grid, water_phases = functions.make_water_grid()
+    water_grid, water_phases = make_grids.make_water_grid()
     for i in water_phases:
         names.append(i)
 else:
     water_grid = []
 
-Mantle_filename = perp.run_perplex(*[Mantle_wt_per,compositional_params,
-                                            [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
-                                             structure_params.get('resolution_LM')],filename,verbose,False])
-grids_high = functions.make_mantle_grid(Mantle_filename,False,use_grids)[0]
+grids_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per, False,use_grids)[0]
 
-core_grid = functions.make_core_grid()
+core_grid = make_grids.make_core_grid()
 
 grids = [grids_low,grids_high,core_grid,water_grid]
 
 def calc_planet(x):
-
-
     Planet = functions.find_Planet_mass(x, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
+
     Planet['phase_names'] = names
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,combine_phases)
 
@@ -168,7 +162,7 @@ def calc_planet(x):
 if __name__ == "__main__":
     num_pts = 100
     M = 1
-    M_err = 0
+    M_err = .1
 
     Mass_planet = np.random.normal(M, M_err, num_pts)
 
@@ -177,8 +171,6 @@ if __name__ == "__main__":
     Planets = pool.map_async(calc_planet,Mass_planet).get()
 
     pool.close()
-
-
     plt.scatter(Mass_planet, [Planets[i].get('radius') for i in range(num_pts)])
     plt.ylabel('Radius (Earth Radii)', size=20)
     plt.xlabel('Mass (Earth Masses)', size=20)

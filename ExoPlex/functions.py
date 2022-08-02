@@ -15,6 +15,7 @@ mO = 15.9994
 mS = 32.0650
 mCa = 40.078
 mAl = 26.981
+range_FeO = np.array([0., .02, .04, .06, .08, .1, .15, .20])
 
 
 def get_FeO(wt_frac_FeO_wanted,FeMg,SiMg,AlMg,CaMg):
@@ -37,7 +38,7 @@ def get_Si_core_w_FeO(compositional_params, verbose):
 
     conserve_oxy = compositional_params.get('conserve_oxy')
 
-    if conserve_oxy == True and  wt_fe_m > 0 and wt_frac_Si_core >0:
+    if conserve_oxy == True:
         if verbose ==True:
             print("Please note this will over-write your choice of wt% Si in core since O is conserved")
         m_feo = mO+mFe
@@ -247,218 +248,6 @@ def get_percents(compositional_params,verbose):
 
     return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
 
-
-def make_core_grid():
-
-    file = open('../Solutions_Small/liquid_iron_grid.dat')
-
-    temp_file = file.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows-1
-            start+=1
-
-    start = 1
-
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-
-    pressure_grid = np.array([row[0] for row in grid])
-    temperature_grid = np.array([row[1] for row in grid])
-    density_grid = np.array([row[2] for row in grid])
-    alpha_grid = [pow(10,row[3]) for row in grid]
-    cp_grid = [row[4] for row in grid]
-
-    PT = np.vstack((pressure_grid, temperature_grid)).T
-    tri_PT = Delaunay(PT)  # Compute the triangulation
-    interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-    interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-    interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
-
-    keys = ['density','alpha','cp']
-    return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP]))
-
-def make_water_grid():
-
-    file = open('../Solutions_Small/water_grid.dat')
-    temp_file = file.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows-1
-            start+=1
-
-    start = 1
-    phase_grid = []
-
-
-    data = temp_file[start:]
-    header = temp_file[0].strip('\n').split(',')
-    Phases = header[5:]
-
-
-    grid = np.zeros((num_rows, num_columns))
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-    pressure_grid = np.array([row[0] for row in grid])
-    temperature_grid = np.array([row[1] for row in grid])
-    density_grid = np.array([row[2] for row in grid])
-    cp_grid = np.array([row[3] for row in grid])
-    alpha_grid = np.array([row[4] for row in grid])
-    phase_grid =  np.array([100*row[5:] for row in grid])
-
-    PT = np.vstack((pressure_grid, temperature_grid)).T
-    tri_PT = Delaunay(PT)  # Compute the triangulation
-    interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-    interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-    interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
-    interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
-
-    keys = ['density', 'alpha', 'cp', 'phases']
-
-    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])),Phases
-
-def make_mantle_grid(Mantle_filename,UMLM,use_grids):
-    """
-    This module converts the PerPlex or premade grids into a dictionary of individual lists (e.g., pressure) for use
-    by ExoPlex integrators
-
-    Parameters
-    ----------
-    Mantle_filename: string
-        name of file either from PerPlex or premade grids
-
-    UMLM: boolean
-        True for upper mantle grids, False for lower mantle grids
-
-    use_grids: boolean
-        True is user is using premade grids, false if using perplex-derived grids
-
-    Returns
-    -------
-    grid_dictionary: dictionary of lists
-        dictionary of individual parameters taken from the phase diagram.
-        Keys include: 'temperature','pressure','density','alpha','cp','phases'
-
-    """
-
-
-    #Use ExoPlex pre-made grid
-    if use_grids==True:
-        if UMLM == True:
-            file = open(Mantle_filename+'_UM_results.txt','r')
-        else:
-            file = open(Mantle_filename+'_LM_results.txt','r')
-
-        temp_file = file.readlines()
-        num_rows = len(temp_file[1:])
-        num_columns = len(temp_file[12].split(','))
-        start = 1
-
-        for i in temp_file[1:]:
-            if i[0] == '#':
-                num_rows = num_rows-1
-                start+=1
-
-
-        header = temp_file[0].strip('\n').split(',')
-
-        Phases = header[5:-1]
-        for i in range(len(Phases)):
-            Phases[i] = Phases[i].strip()
-
-
-        #calculate number of rows getting rid of #'s
-
-        data = temp_file[start:]
-        grid = np.zeros((num_rows,num_columns))
-
-        for i in range(num_rows):
-            #for j in range(num_columns):
-            columns = data[i].strip('\n').split(',')
-            grid[i] = [float(j) for j in columns]
-
-        num_phases = len(grid[0][5:])-1
-
-        temperature_grid = np.array([row[1] for row in grid])
-
-        pressure_grid = np.array([row[0] for row in grid])
-        density_grid = np.array([row[2]*1000 for row in grid])
-        alpha_grid = [pow(10,row[3]) for row in grid]
-        cp_grid = [row[4] for row in grid]
-        phase_grid = [row[5:-1] for row in grid]
-
-        PT = np.vstack((pressure_grid, temperature_grid)).T
-        tri_PT = Delaunay(PT)  # Compute the triangulation
-        interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-        interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-        interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
-        interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
-
-        keys = ['density','alpha','cp','phases']
-
-        return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP,interpolator_phases])),Phases
-
-    else:
-        #Use PerPlex derived grid
-        if UMLM == True:
-            file = open(Mantle_filename + '_UM_results.txt', 'r')
-        else:
-            file = open(Mantle_filename + '_LM_results.txt', 'r')
-
-        temp_file = file.readlines()
-        num_rows = len(temp_file[13:])
-        num_columns = len(temp_file[12].split())
-
-        header = temp_file[12].strip('\n').split()
-        Phases = header[5:]
-
-        for i in range(len(Phases)):
-            Phases[i] = Phases[i].strip(",mo%")
-
-        data = temp_file[13:]
-        grid = np.zeros((num_rows, num_columns))
-
-        for i in range(num_rows):
-            columns = data[i].strip('\n').split()
-            grid[i] = [float(j) for j in columns]
-
-        num_phases = len(grid[0][5:])
-        phases_grid = np.zeros((num_rows, num_phases))
-        for i in range(num_rows):
-            phases_grid[i] = grid[i][5:]
-
-        temperature_grid = [row[0] for row in grid]
-        pressure_grid = [row[1] for row in grid]
-        density_grid = [row[2] for row in grid]
-        alpha_grid = [row[3] for row in grid]
-        cp_grid = [row[4] for row in grid]
-        phase_grid = [row[5:] for row in grid]
-
-        PT = np.vstack((pressure_grid, temperature_grid)).T
-        tri_PT = Delaunay(PT)  # Compute the triangulation
-        interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-        interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-        interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
-        interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
-
-        keys = ['density', 'alpha', 'cp', 'phases']
-
-        return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])), Phases
 
 def get_phases(Planet,grids,layers,combine_phases):
     """
@@ -814,7 +603,7 @@ def find_filename(compositional_params,verbose):
     SiMg_file = range_SiMg[(np.abs(range_SiMg - SiMg)).argmin()]
     CaMg_file = range_CaMg[(np.abs(range_CaMg - CaMg)).argmin()]
     AlMg_file = range_AlMg[(np.abs(range_AlMg - AlMg)).argmin()]
-    FeO_file = str('%.02f' % (range_FeO[(np.abs(range_FeO - FeO)).argmin()]))
+    FeO_file = str('%.02f'% FeO)
 
     if SiMg_file >= 1.1:
         SiMg_file = '%.1f'%(SiMg_file)
