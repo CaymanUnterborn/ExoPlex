@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from scipy.spatial import Delaunay
 from scipy.interpolate import LinearNDInterpolator
@@ -216,7 +218,6 @@ def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
             num_rows = num_rows - 1
             start += 1
 
-    header = temp_file[0].strip('\n').split(',')
 
     data = temp_file[start:]
     grid = np.zeros((num_rows, num_columns))
@@ -307,7 +308,6 @@ def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
 
         if Mantle_wt_per.get('FeO') > 0 and in_grid == False:
             return(make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM))
-
 
         if UMLM == True:
             file = open(Mantle_filename+'_UM_results.txt','r')

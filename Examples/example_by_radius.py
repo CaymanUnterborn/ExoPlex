@@ -44,7 +44,7 @@ if __name__ == "__main__":
     wt_frac_water = 0.0
 
     #Don't forget that if you have water you need to add water layers
-    number_h2o_layers = 0
+    number_h2o_layers = 300
 
     #The potential Temperature of Water, if present
     water_potential_temp = 300.
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     print("Core Radius Fraction = ", '%.2f' % (100. * Planet['radius'][num_core_layers - 1] / Planet['radius'][-1]))
     print("CMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers] / 1e4), "GPa")
     print("CMB Temperature = ", '%.2f' % (Planet['temperature'][num_core_layers]), "K")
-    if number_h2o_layers > 0:
+    if number_h2o_layers > 0 and wt_frac_water > 0:
         print("WMB Pressure = ", '%.2f' % (Planet['pressure'][num_core_layers + num_mantle_layers] // 1e4), "GPa")
         print("WMB Temperature = ", '%.2f' % (Planet['temperature'][num_core_layers + num_mantle_layers]), "K")
 

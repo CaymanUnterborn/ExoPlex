@@ -1,7 +1,7 @@
 import os
 import sys
 import pexpect as pe
-
+import numpy as np
 
 # hack to allow scripts to be placed in subdirectories next to ExoPlex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
@@ -40,79 +40,68 @@ def run_perplex(*args):
 
     Mantle_wt_per = args[0]
     compositional_params = args[1]
-
-    structure_params = args[2]
-
-    FeMg = compositional_params.get('FeMg')
-    SiMg = compositional_params.get('SiMg')
-    CaMg = compositional_params.get('CaMg')
-    AlMg = compositional_params.get('AlMg')
-    wt_frac_FeO_wanted = compositional_params.get('wt_frac_FeO_wanted')
-
-    use_grids = compositional_params.get('use_grids')
-
     filename = args[3]
     verbose = args[4]
     UMLM = args[5]
 
-    Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
-    Temperature_range_mantle=structure_params.get('Temperature_range_mantle_LM'),
-    resolution=structure_params.get('resolution_LM')
-
-    plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
-             + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
-             + ' ' + str(Mantle_wt_per.get('Al2O3'))+ ' ' + str(0.) #last value included for Na
-
-
-    solfileparamsString0 = '_' + str(round(SiMg, 3)) + '_' + str(round(FeMg, 3)) + '_' + str(
-        round(CaMg, 3)) + '_' + str(round(AlMg, 3)) \
-                           + '_' + str(round(wt_frac_FeO_wanted, 3))
-
-    # changes periods to commas
-    solfileparamsString = solfileparamsString0.replace('.', ',')
-
-    solutionFileNameMan = 'SiMg_FeMg_CaMg_AlMg_XFeO_fSic' + solfileparamsString + '_MANTLE'
-    solutionFileNameMan_short = list(solutionFileNameMan)
-    solutionFileNameMan_short[0:30] = []
-
-    solutionFileNameMan = "".join(solutionFileNameMan_short)
+    use_grids = compositional_params.get('use_grids')
 
     if use_grids == False:
-        filename = solutionFileNameMan
+        structure_params = args[2]
+        FeMg = compositional_params.get('FeMg')
+        SiMg = compositional_params.get('SiMg')
+        CaMg = compositional_params.get('CaMg')
+        AlMg = compositional_params.get('AlMg')
+        wt_frac_FeO_wanted = compositional_params.get('wt_frac_FeO_wanted')
+
+        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
+        Temperature_range_mantle = structure_params.get('Temperature_range_mantle_LM'),
+        resolution = structure_params.get('resolution_LM')
+
+        plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
+                 + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
+                 + ' ' + str(Mantle_wt_per.get('Al2O3')) + ' ' + str(0.)  # last value included for Na
+
+        solfileparamsString0 = '_' + str(round(SiMg, 3)) + '_' + str(round(FeMg, 3)) + '_' + str(
+            round(CaMg, 3)) + '_' + str(round(AlMg, 3)) \
+                               + '_' + str(round(wt_frac_FeO_wanted, 3))
+
+        # changes periods to commas
+        solfileparamsString = solfileparamsString0.replace('.', ',')
+
+        solutionFileNameMan = 'SiMg_FeMg_CaMg_AlMg_XFeO_fSic' + solfileparamsString + '_MANTLE'
+        solutionFileNameMan_short = list(solutionFileNameMan)
+        solutionFileNameMan_short[0:30] = []
+
+        solutionFileNameMan = "".join(solutionFileNameMan_short)
+
+        if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_UM_results.txt') or os.path.isfile(
+                '../Calc_Solutions/' + solutionFileNameMan + '_LM_results.txt'):
+            filename = solutionFileNameMan
+            if verbose == True:
+                print('The Upper mantle .tab already exists, please wait briefly for solution\n')
+            return '../Calc_Solutions/' + filename
+        else:
+            filename = solutionFileNameMan
 
     else:
+        range_FeO = np.array([0., .02, .04, .06, .08, .1, .15, .20])
 
-        check_FeO = float(filename.split('_')[-1].split('Fe')[0])
-        if check_FeO <= 0.2 and check_FeO >0:
-            test = filename.split('_')
-            test[-1] = '0.15Fe'
-            filename = '_'.join(test)
-        if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
-            if verbose == True:
-                print ('The Upper mantle .tab already exists\n')
-            return '../Solutions_Small/' + filename
-
-        if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
-            if verbose == True:
-                print ('The Lower mantle .tab already exists\n')
-            return '../Solutions_Small/' + filename
-
-        else:
-            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
-                filename = solutionFileNameMan
+        if np.where(range_FeO==Mantle_wt_per['FeO']/100)[0] > -1:
+            if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') or os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt'):
                 if verbose == True:
-                    print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
+                    print ('The Upper/Lower mantle .tab already exists\n')
+                return '../Solutions_Small/' + filename
 
-            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_LM_results.txt') == True and UMLM == False:
-                filename = solutionFileNameMan
-                if verbose == True:
-                    print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
             else:
                 print("You have set use_grids to True but your composition does not exist within the grids.")
                 print("Try again with use_grids = False")
                 sys.exit()
+        else:
+            test = filename.split('_')
+            test[-1] = '0.15Fe'
+            filename = '_'.join(test)
+            return '../Solutions_Small/' + filename
 
     component1 = 'MGO'
     component2 = 'SIO2'

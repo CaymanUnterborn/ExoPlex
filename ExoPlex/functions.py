@@ -234,8 +234,7 @@ def get_percents(compositional_params,verbose):
     S_core_wt  = abs(round(S_core_wt*100.,8))
 
     Core_wt_per = {'Fe':Fe_core_wt,'Si':Si_core_wt,'O':O_core_wt,'S':S_core_wt}
-    Core_mol_per ={'Fe':Core_moles[0]/tot_moles_core,'Si':Core_moles[1]/tot_moles_core,\
-                  'O':Core_moles[2]/tot_moles_core,'S':Core_moles[3]/tot_moles_core}
+
     if verbose == True:
         print()
         print("Core composition: ",Core_wt_per)
@@ -246,7 +245,7 @@ def get_percents(compositional_params,verbose):
         print()
 
 
-    return(Core_wt_per,Mantle_wt_per,Core_mol_per,core_mass_frac)
+    return(Core_wt_per,Mantle_wt_per,core_mass_frac)
 
 
 def get_phases(Planet,grids,layers,combine_phases):
@@ -542,7 +541,6 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
         Dictionary of pressure, temperature, expansivity, specific heat and phases for modeled planet
 
     """
-
     Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
 
     Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])

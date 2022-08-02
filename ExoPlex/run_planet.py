@@ -44,7 +44,7 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
         keys = 'radius','density','temperature','gravity','pressure', 'alpha','cp','Vphi''Vp','Vs','K'
     """
 
-    Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
+    Core_wt_per, Mantle_wt_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
     get_phases = compositional_params.get('combine_phases')
 
     use_grids = compositional_params.get('use_grids')
@@ -53,7 +53,18 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,get_phases])
     grids_low, names = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per, True,use_grids)
     names.append('Fe')
-    if layers[-1] > 0:
+
+    wt_frac_water = compositional_params.get('wt_frac_water')
+    num_mantle_layers, num_core_layers, number_h2o_layers = layers
+
+    if wt_frac_water > 0 and number_h2o_layers <=0:
+        layers[2] = 300
+        print("Added 300 water layers for you")
+    if wt_frac_water <= 0 and number_h2o_layers >0:
+        print("You have water layers but no water, fixing this for you")
+        layers[2] = 0
+
+    if layers[2] > 0:
         water_grid, water_phases = make_grids.make_water_grid()
         for i in water_phases:
             names.append(i)
@@ -101,7 +112,7 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
         Dictionary of final pressure, temperature, expansivity, specific heat and phases for modeled planet
         keys = 'radius','density','temperature','gravity','pressure', 'alpha','cp','Vphi''Vp','Vs','K'
     """
-    Core_wt_per, Mantle_wt_per, Core_mol_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
+    Core_wt_per, Mantle_wt_per, core_mass_frac = functions.get_percents(compositional_params,verbose)
 
     #Run fine mesh grid
     use_grids = compositional_params.get('use_grids')
@@ -109,17 +120,26 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
 
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,get_phases])
     grids_low, names = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,True,use_grids)
+    grids_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
+    core_grid = make_grids.make_core_grid()
     names.append('Fe')
-    if layers[-1] > 0:
+
+    wt_frac_water = compositional_params.get('wt_frac_water')
+    num_mantle_layers, num_core_layers, number_h2o_layers = layers
+
+    if wt_frac_water > 0 and number_h2o_layers <=0:
+        layers[2] = 300
+        print("Added 300 water layers for you")
+    if wt_frac_water <= 0 and number_h2o_layers >0:
+        print("You have water layers but no water, fixing this for you")
+        layers[2] = 0
+
+    if layers[2] > 0:
         water_grid, water_phases = make_grids.make_water_grid()
         for i in water_phases:
             names.append(i)
     else:
         water_grid = []
-
-    #Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,False])
-    grids_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
-    core_grid = make_grids.make_core_grid()
 
     grids = [grids_low,grids_high,core_grid,water_grid]
 
