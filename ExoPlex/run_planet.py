@@ -4,7 +4,7 @@
 
 import os
 import sys
-import ExoPlex.minphys as minphys
+import ExoPlex.make_grids as make_grids
 import ExoPlex.functions as functions
 # hack to allow scripts to be placed in subdirectories next to ExoPlex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
@@ -50,28 +50,18 @@ def run_planet_radius(radius_planet, compositional_params, structure_params, lay
     use_grids = compositional_params.get('use_grids')
 
     #Run fine mesh grid
-    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
-                                                [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
-                                                structure_params.get('resolution_UM')],filename,verbose,get_phases])
-    grids_low, names = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per, True,use_grids)
+    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,get_phases])
+    grids_low, names = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per, True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
-        names.append('water')
-        names.append('ice_Ih')
-        names.append('ice_II')
-        names.append('ice_III')
-        names.append('ice_V')
-        names.append('ice_VI')
-        names.append('ice_VII')
-        water_grid = functions.make_water_grid()
+        water_grid, water_phases = make_grids.make_water_grid()
+        for i in water_phases:
+            names.append(i)
     else:
         water_grid = []
-    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
-                                                [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
-                                                 structure_params.get('resolution_LM')],filename,verbose,False])
-    grids_high = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
+    grids_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
 
-    core_grid = functions.make_core_grid()
+    core_grid = make_grids.make_core_grid()
 
     grids = [grids_low,grids_high,core_grid,water_grid]
     Planet = functions.find_Planet_radius(radius_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
@@ -117,24 +107,19 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     use_grids = compositional_params.get('use_grids')
     get_phases = compositional_params.get('combine_phases')
 
-    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
-                                                [structure_params.get('Pressure_range_mantle_UM'),structure_params.get('Temperature_range_mantle_UM'),
-                                                structure_params.get('resolution_UM')],filename,verbose,get_phases])
-    grids_low, names = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,True,use_grids)
+    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,get_phases])
+    grids_low, names = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,True,use_grids)
     names.append('Fe')
     if layers[-1] > 0:
-        water_grid, water_phases = functions.make_water_grid()
+        water_grid, water_phases = make_grids.make_water_grid()
         for i in water_phases:
             names.append(i)
     else:
         water_grid = []
 
-    Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,
-                                                [structure_params.get('Pressure_range_mantle_LM'),structure_params.get('Temperature_range_mantle_LM'),
-                                                 structure_params.get('resolution_LM')],filename,verbose,False])
-    grids_high = functions.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
-
-    core_grid = functions.make_core_grid()
+    #Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,False])
+    grids_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)[0]
+    core_grid = make_grids.make_core_grid()
 
     grids = [grids_low,grids_high,core_grid,water_grid]
 

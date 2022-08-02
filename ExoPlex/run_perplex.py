@@ -41,7 +41,7 @@ def run_perplex(*args):
     Mantle_wt_per = args[0]
     compositional_params = args[1]
 
-    structure_values = args[2]
+    structure_params = args[2]
 
     FeMg = compositional_params.get('FeMg')
     SiMg = compositional_params.get('SiMg')
@@ -55,10 +55,9 @@ def run_perplex(*args):
     verbose = args[4]
     UMLM = args[5]
 
-
-    Pressure_range_mantle = structure_values[0]
-    Temperature_range_mantle = structure_values[1]
-    resolution = structure_values[2]
+    Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
+    Temperature_range_mantle=structure_params.get('Temperature_range_mantle_LM'),
+    resolution=structure_params.get('resolution_LM')
 
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
