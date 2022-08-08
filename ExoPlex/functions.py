@@ -185,7 +185,7 @@ def get_percents(compositional_params,verbose):
     Al_moles_mant = Mantle_moles[5]
 
 
-    if Si_moles_mant/Mg_moles_mant <0.5 or Si_moles_mant/Mg_moles_mant >2:
+    if Si_moles_mant/Mg_moles_mant <0.1 or Si_moles_mant/Mg_moles_mant >2:
         if use_grids == True:
             print("Using grids and have a mantle Si/Mg out of range of ExoPlex grids")
             print("which are valid 0.5 <= Si/Mg <= 2")
@@ -585,7 +585,7 @@ def find_filename(compositional_params,verbose):
     FeO = mantle_wt_percents.get('FeO')/100.
 
 
-    range_SiMg = np.array([0.5 + .1*x for x in range(16)])
+    range_SiMg = np.array([0.1+ .1*x for x in range(20)])
     range_CaMg = np.array([0.02 + 0.01*x for x in range(8)])
 
     range_AlMg = np.array([0.04 + 0.01*x for x in range(8)])
