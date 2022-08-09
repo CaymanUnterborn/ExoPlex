@@ -615,8 +615,7 @@ def find_filename(compositional_params,verbose):
     AlMg_file = range_AlMg[(np.abs(range_AlMg - AlMg)).argmin()]
     FeO_file = str('%.02f'% FeO)
 
-    if SiMg_file >= 1.1:
-        SiMg_file = '%.1f'%(SiMg_file)
+    SiMg_file = '%.1f'%(SiMg_file)
 
     FeMg_file  = '0.00'
     NaMg_file = 0.0
