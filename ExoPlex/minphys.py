@@ -782,6 +782,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
                 index.append(i)
 
         if impo == True:
+            from ExoPlex.burnman import minerals
             co = minerals.other.liquid_iron()
             co_vals = co.evaluate(['thermal_expansivity','molar_heat_capacity_p'], P_range, T_range)
             counter = 0
