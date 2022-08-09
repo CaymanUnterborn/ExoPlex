@@ -43,9 +43,12 @@ def initialize_by_mass(*args):
     num_layers = sum(args[3])
 
     num_mantle_layers, num_core_layers, number_h2o_layers = args[3]
+
+    if wt_frac_water > 0 and number_h2o_layers ==0:
+        print("You have water but no water layers, please add")
+        sys.exit()
     Pressure_layers = np.zeros(num_layers)
     Temperature_layers = np.zeros(num_layers)
-    mass_layers = np.zeros(num_layers)
 
     core_mass_frac = args[4]
     water_mass = (wt_frac_water*mass_planet)*Earth_mass
@@ -89,22 +92,19 @@ def initialize_by_mass(*args):
                 Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + ((i-number_h2o_layers-num_mantle_layers)/num_core_layers)*1e7
                 Temperature_layers[i] = Temperature_layers[i-1]+2*(i-number_h2o_layers-num_mantle_layers)/num_core_layers
 
-    for i in range(num_layers):
-        if i < num_core_layers:
-                mass_layers[i] = core_mass/(num_core_layers)
+    mass_layers_core = [ core_mass / num_core_layers for i in range(num_core_layers)]
+    mass_layers_mantle = [mantle_mass / num_mantle_layers for i in range(num_mantle_layers)]
 
-        elif i < (num_core_layers + num_mantle_layers):
-            mass_layers[i] = mantle_mass/num_mantle_layers
+    if number_h2o_layers > 0:
+        mass_layers_water = [water_mass / number_h2o_layers for i in range(number_h2o_layers)]
+        mass_layers = mass_layers_core + mass_layers_mantle+mass_layers_water
+        mass_layers = [(sum(mass_layers[:i + 1])) for i in range(len(mass_layers))]
 
-        else:
-            mass_layers[i] = (water_mass / number_h2o_layers)
+    else:
+        mass_layers = mass_layers_core + mass_layers_mantle
 
-    mass_update = np.zeros(num_layers)
+        mass_layers = [(sum(mass_layers[:i + 1])) for i in range(len(mass_layers))]
 
-    for i in range(len(mass_layers)):
-        mass_update[i] = (sum(mass_layers[:i + 1]))
-
-    mass_layers = mass_update
     Pressure_layers = Pressure_layers[::-1]
     Temperature_layers = Temperature_layers[::-1]
     keys = ['mass', 'temperature', 'pressure']
