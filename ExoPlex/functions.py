@@ -361,17 +361,27 @@ def get_phases(Planet,grids,layers,combine_phases):
     phase_names = Planet['phase_names']
 
     if combine_phases == True:
-        solutions = {'c2/c':'c2c_ss', 'fc2/c':'c2c_ss', 'per':'ferropericlase', 'wus': 'ferropericlase', 'aperov':'perovskite', 'fperov':'perovskite','perov':'perovskite',
-        'ab':'plagioclase','an':'plagioclase','sp':'spinel','herc':'spinel', 'fo':'olivine', 'fa':'olivine', 'wad':'wadslyite','fwad':'wadslyite',
-        'ring':'ringwoodite','fring':'ringwoodite','odi':'orthopyroxene','en':'orthopyroxene', 'fs':'orthopyroxene','ts':'orthopyroxene',
-        'jd':'clinopyroxene','di':'clinopyroxene','hed':'clinopyroxene','cen':'clinopyroxene','cts':'clinopyroxene', 'cor':'akimotoite',
-        'aki':'akimotoite','faki':'akimotoite','gr':'garnet','alm':'garnet','maj':'garnet','cmaj':'garnet','py':'garnet','jmaj':'garnet','appv':'postperovskite',
-        'ppv':'postperovskite','fppv':'postperovskite','mfer':'cf','ffer':'cf','nfer':'cf', 'ca-pv':'ca-perovskite','cfs':'cfs',
-        'ky':'kyanite','neph':'nephaline','coe':'coesite','seif':'seiferite','q':'quartz','s':'stishovite'}
+        solutions = {'c2/c': 'c2c_ss', 'fc2/c': 'c2c_ss', 'per': 'ferropericlase', 'wus': 'ferropericlase',
+                     'aperov': 'perovskite', 'fperov': 'perovskite', 'perov': 'perovskite',
+                     'ab': 'plagioclase', 'an': 'plagioclase', 'sp': 'spinel', 'herc': 'spinel', 'fo': 'olivine',
+                     'fa': 'olivine', 'wad': 'wadslyite', 'fwad': 'wadslyite',
+                     'ring': 'ringwoodite', 'fring': 'ringwoodite', 'odi': 'orthopyroxene', 'en': 'orthopyroxene',
+                     'fs': 'orthopyroxene', 'ts': 'orthopyroxene',
+                     'jd': 'clinopyroxene', 'di': 'clinopyroxene', 'hed': 'clinopyroxene', 'cen': 'clinopyroxene',
+                     'cts': 'clinopyroxene', 'cor': 'akimotoite',
+                     'aki': 'akimotoite', 'faki': 'akimotoite', 'gr': 'garnet', 'alm': 'garnet', 'maj': 'garnet',
+                     'cmaj': 'garnet', 'py': 'garnet', 'jmaj': 'garnet', 'fmaj': 'garnet', 'appv': 'postperovskite',
+                     'ppv': 'postperovskite', 'fppv': 'postperovskite', 'mfer': 'ferrosil', 'ffer': 'ferrosil',
+                     'nfer': 'ferrosil', 'ca-pv': 'ca-perovskite', 'cfs': 'cfs',
+                     'ky': 'kyanite', 'neph': 'nephaline', 'coe': 'coesite', 'seif': 'seiferite', 'q': 'quartz',
+                     's': 'stishovite'}
 
-        phase_amounts = {'c2c_ss':0.,'ferropericlase':0.,'perovskite':0.,'plagioclase':0.,'spinel':0.,'olivine':0.,'wadslyite':0.,
-                         'ringwoodite':0.,'orthopyroxene':0.,'clinopyroxene':0.,'akimotoite':0.,'garnet':0.,'postperovskite':0.,
-                         'kyanite':0.,'nephaline':0.,'coesite':0.,'seiferite':0.,'quartz':0.,'stishovite':0.,'cf':0.,'ca-perovskite':0.,'cfs':0.}
+        phase_amounts = {'c2c_ss': 0., 'ferropericlase': 0., 'perovskite': 0., 'plagioclase': 0., 'spinel': 0.,
+                         'olivine': 0., 'wadslyite': 0.,
+                         'ringwoodite': 0., 'orthopyroxene': 0., 'clinopyroxene': 0., 'akimotoite': 0., 'garnet': 0.,
+                         'postperovskite': 0.,
+                         'kyanite': 0., 'nephaline': 0., 'coesite': 0., 'seiferite': 0., 'quartz': 0., 'stishovite': 0.,
+                         'ferrosil': 0., 'ca-perovskite': 0., 'cfs': 0.}
 
 
         for j in phase_names:
