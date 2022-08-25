@@ -22,14 +22,16 @@ def ice_VII_vals(P,T):
             burnman.Mineral.__init__(self)
 
     rock = Ice_VII()
-    density = rock.evaluate(['density'], P /1e6, T)[0]
-    Cp = 1000*(3.3 + 22.1 * np.exp(-0.058 * P*1000.))  # Asahara 2010
+    den_noT = rock.evaluate(['density'], P *1e6, 300)[0]
+    corr = np.exp((T- 300) * 11.58e-5)
+    density = den_noT/corr
+    Cp = 1000*(3.3 + 22.1 * np.exp(-0.058 * P/1000.))  # Asahara 2010
     Ks = 23.9
     Ksp = 4.2
     a0 = -3.9e-4
     a1 = 1.5e-6
     at = a0 + a1 * T
-    alpha = at * (1. + (Ksp / Ks) * P/1e6) ** (-0.9)  # fei 1993)
+    alpha = at * (1. + (Ksp / Ks) * P/1000) ** (-0.9)  # fei 1993)
     return (density, Cp, alpha)
 
 if __name__ == "__main__":
@@ -39,7 +41,7 @@ if __name__ == "__main__":
 
     max_T = 500. #K
     min_T = 300.
-    num_P_points = 500
+    num_P_points = 200
     num_T_points = 100
 
 
@@ -94,7 +96,7 @@ if __name__ == "__main__":
                         break
                 new = sf.seafreeze(np.array(PT[counter]), phase)
 
-                to_go = [P[i]*10,T[j],new.rho[0][0],new.Cp[0][0],new.alpha[0][0]]
+                to_go = [P[i]*10,T[j],new.rho[0][0],new.Cp[0][0],np.log10(new.alpha[0][0])]
                 for l in phase_append:
                     to_go.append(l)
                 output.append(to_go)
@@ -107,7 +109,7 @@ if __name__ == "__main__":
                         phase_append = appends[k]
                         break
                 density, Cp, alpha = ice_VII_vals(P[i],T[j])
-                to_go = [P[i] * 10, T[j], new.rho[0][0], new.Cp[0][0], new.alpha[0][0]]
+                to_go = [P[i] * 10, T[j], density, Cp, np.log10(alpha)]
                 for l in phase_append:
                     to_go.append(l)
                 output.append(to_go)
@@ -126,5 +128,7 @@ if __name__ == "__main__":
     for i in name_for_index:
         head.append(i)
     header = ','.join(head)
-    np.savetxt('water_grid.dat', output, fmt='%s', delimiter=",", newline='\n',
+    format = '%.3f,%.1f,%.5f,%.5f,%.5f,%i,%i,%i'
+    #format = '%s'
+    np.savetxt('water_grid.dat', output, fmt=format, delimiter=",", newline='\n',
                 header=header, footer='', comments='# ')

@@ -52,7 +52,7 @@ def initialize_by_mass(*args):
 
     core_mass_frac = args[4]
     water_mass = (wt_frac_water*mass_planet)*Earth_mass
-    core_mass = ((mass_planet*(1-wt_frac_water))* core_mass_frac *Earth_mass)
+    core_mass = ((mass_planet*(1.-wt_frac_water))* core_mass_frac *Earth_mass)
 
     mantle_mass = (mass_planet*Earth_mass)-water_mass-core_mass
     Mantle_potential_temp = structural_params.get('Mantle_potential_temp')
@@ -67,7 +67,7 @@ def initialize_by_mass(*args):
     CMB_T_guess = (4180.*(Radius_planet_guess-0)-2764.*pow(Radius_planet_guess-0,2.)+1219.*pow(Radius_planet_guess-0,3.)) \
                   + (Mantle_potential_temp-1600)*(0.82+pow(Radius_planet_guess-0,1.81))
     if wt_frac_water > 0:
-        WMB_pres = 1e6 #in bar
+        WMB_pres = 1e5 #in bar
     else:
         WMB_pres = 1 #in bar
     if CMB_T_guess < Mantle_potential_temp:
@@ -82,7 +82,7 @@ def initialize_by_mass(*args):
 
             if i<number_h2o_layers:
                 Pressure_layers[i] = 1 + .5*WMB_pres*(i/number_h2o_layers)
-                Temperature_layers[i] = water_potential_temp+700*(i/number_h2o_layers)
+                Temperature_layers[i] = water_potential_temp+200*(i/number_h2o_layers)
 
             elif i <= number_h2o_layers+num_mantle_layers-1:
                 Pressure_layers[i] = WMB_pres + 1*dP_dr*(i-number_h2o_layers)
@@ -92,17 +92,22 @@ def initialize_by_mass(*args):
                 Pressure_layers[i] = Pressure_layers[number_h2o_layers+num_mantle_layers-1] + ((i-number_h2o_layers-num_mantle_layers)/num_core_layers)*1e7
                 Temperature_layers[i] = Temperature_layers[i-1]+2*(i-number_h2o_layers-num_mantle_layers)/num_core_layers
 
-    mass_layers_core = [ core_mass / num_core_layers for i in range(num_core_layers)]
-    mass_layers_mantle = [mantle_mass / num_mantle_layers for i in range(num_mantle_layers)]
+    val = core_mass/num_core_layers
+    mass_layers_core = [val for k in range(num_core_layers)]
+    val =mantle_mass / num_mantle_layers
+
+    mass_layers_mantle = [val for k in range(num_mantle_layers)]
+
 
     if number_h2o_layers > 0:
-        mass_layers_water = [water_mass / number_h2o_layers for i in range(number_h2o_layers)]
-        mass_layers = mass_layers_core + mass_layers_mantle+mass_layers_water
+        val = water_mass / number_h2o_layers
+        mass_layers_water = [val for k in range(number_h2o_layers)]
+        mass_layers = np.concatenate((mass_layers_core, mass_layers_mantle,mass_layers_water))
         mass_layers = [(sum(mass_layers[:i + 1])) for i in range(len(mass_layers))]
 
-    else:
-        mass_layers = mass_layers_core + mass_layers_mantle
 
+    else:
+        mass_layers = np.concatenate((mass_layers_core,mass_layers_mantle))
         mass_layers = [(sum(mass_layers[:i + 1])) for i in range(len(mass_layers))]
 
     Pressure_layers = Pressure_layers[::-1]
@@ -144,9 +149,12 @@ def compress_mass(*args):
     grids = args[1]
     Core_wt_per = args[2]
     structural_params= args[3]
-    layers= args[4]
-    verbose = args[5]
+    compositional_params = args[4]
+    core_mass_frac = args[5]
+    layers= args[6]
+    verbose = args[7]
     n_iterations = 1
+    wt_frac_water = compositional_params.get('wt_frac_water')
     max_iterations = 100
 
     old_r = [10  for i in range(len(Planet['mass']))]
@@ -159,7 +167,7 @@ def compress_mass(*args):
             converge,old_r = minphys.check_convergence(Planet['density'],old_r)
 
         Planet['density'] = minphys.get_rho(Planet,grids,Core_wt_per,layers)
-        Planet['radius'] = minphys.get_radius(Planet, layers)
+        Planet['radius'] = minphys.get_radius(Planet,wt_frac_water,core_mass_frac,layers)
         Planet['gravity'] = minphys.get_gravity(Planet,layers)
         Planet['pressure'] = minphys.get_pressure(Planet,layers)
         Planet['temperature'] = minphys.get_temperature(Planet, grids, structural_params, layers)
