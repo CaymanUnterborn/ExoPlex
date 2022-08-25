@@ -145,14 +145,11 @@ def get_percents(compositional_params,verbose):
     Mantle_moles = Num_moles[4:]
 
     for i in Core_moles:
-        if i <-1*np.finfo(float).eps:
-            print("You have a negative core composition, therefore your chosen composition is not valid stoichiometrically" )
-            print(Core_moles)
-            sys.exit()
+        assert i > -1*np.finfo(float).eps, "You have a negative core composition, therefore your chosen composition is not valid stoichiometrically" + str(Core_moles)
+
     for i in Mantle_moles:
-        if i <-1*np.finfo(float).eps:
-            print("You have a negative mantle composition, therefore your chosen composition is not valid stoichiometrically" )
-            sys.exit()
+        assert i > -1*np.finfo(float).eps, "You have a negative mantle composition, therefore your chosen composition is not valid stoichiometrically"+ Mantle_moles
+
     tot_moles_core = sum(Core_moles)
 
 
@@ -169,10 +166,7 @@ def get_percents(compositional_params,verbose):
     #Core mass fraction of planet
     core_mass_frac = mass_of_Core/Mtot
 
-    if core_mass_frac <=0:
-        print("Your chosen composition has a negative core mass fraction")
-        print("This is likely due to too low of an Fe/Mg and too high of a mantle FeO content")
-        sys.exit()
+    assert core_mass_frac > 0, "Your chosen composition has a negative core mass fraction\n This is likely due to too low of an Fe/Mg and too high of a mantle FeO content"
 
 
     #Weight percents of mantle oxides
@@ -188,10 +182,7 @@ def get_percents(compositional_params,verbose):
     if Si_moles_mant/Mg_moles_mant <0.1 or Si_moles_mant/Mg_moles_mant >2:
         if use_grids == True:
             print("Using grids and have a mantle Si/Mg out of range of ExoPlex grids")
-            print("which are valid 0.5 <= Si/Mg <= 2")
-            print(Si_moles_mant/Mg_moles_mant)
-            print(core_mass_frac)
-            sys.exit()
+            print("which are valid 0.1 <= Si/Mg <= 2")
 
     FeO_mant_wt = Fe_moles_mant*(mFe+mO)/mass_of_Mantle
     MgO_mant_wt = Mg_moles_mant*(mMg+mO)/mass_of_Mantle
@@ -453,7 +444,7 @@ def write(Planet,filename):
     string_element = ','.join(line_name)
     filename = 'Data/'+filename
 
-    np.savetxt(filename+'.csv', output, '%.5f', ",", newline='\n',
+    np.savetxt(filename+'.csv', output, '%f', ",", newline='\n',
                 header=string_element, footer='', comments='# ')
 
     print()
@@ -555,7 +546,7 @@ def find_Planet_mass(mass_planet, core_mass_frac, structure_params, compositiona
 
     Planet = planet.initialize_by_mass(*[mass_planet, structure_params, compositional_params, layers,core_mass_frac])
 
-    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers,verbose])
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, compositional_params, core_mass_frac, layers,verbose])
 
 
     return Planet
@@ -631,61 +622,14 @@ def find_filename(compositional_params,verbose):
 def check(Planet):
     def monotonic(x):
         dx = np.diff(x)
-        return np.all(dx <= 0) or np.all(dx >= 0)
+
+        return np.all(dx <= np.finfo(float).eps) or np.all(dx >= np.finfo(float).eps)
+
     T_test = monotonic(Planet['temperature'])
     P_test = monotonic(Planet['pressure'])
     rho_test = monotonic(Planet['density'])
-    plot = False
-    if T_test == False:
-        print("Temperature is not monotonic, thus an error. Will plot.")
-        plot = True
-    if P_test == False:
-        print("Pressure is not monotonic, thus an error. Will plot.")
-        plot = True
-    if rho_test == False:
-        print("density is not monotonic, thus an error. Will plot.")
-        plot = True
 
-    if plot == True:
-        import matplotlib.pyplot as plt
-        figure = plt.figure(figsize=(10, 9))
-
-        ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
-        ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
-        ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
-        ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
-
-        ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
-        ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
-        ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
-        ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
-        ax1.minorticks_on()
-        text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
-        ax1.text(0.05, 0.95, text)
-
-        # Make a subplot showing the calculated pressure profile
-        ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
-        ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
-        ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
-        ax2.set_ylabel("Pressure (GPa)")
-        ax2.minorticks_on()
-
-        # Make a subplot showing the calculated gravity profile
-        ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
-        ax3.set_ylabel("Gravity (m/s$^2)$")
-        ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
-        ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
-        ax3.minorticks_on()
-
-        # Make a subplot showing the calculated temperature profile
-        ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
-        ax4.set_ylabel("Temperature ($K$)")
-        ax4.set_xlabel("Radius (km)")
-        ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
-        ax4.set_ylim(0., max(Planet['temperature']) + 300)
-        ax4.minorticks_on()
-
-        plt.show()
-        sys.exit()
-
+    assert T_test == True, "Temperature is not monotonicly increasing with depth, plot and rerun"
+    assert P_test == True, "Pressure is not monotonicly increasing with depth, plot and rerun"
+    assert rho_test == True, "Density is not monotonicly increasing with depth, plot and rerun"
 

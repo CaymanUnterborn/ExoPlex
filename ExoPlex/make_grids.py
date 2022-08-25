@@ -84,7 +84,7 @@ def make_water_grid():
     temperature_grid = np.array([row[1] for row in grid])
     density_grid = np.array([row[2] for row in grid])
     cp_grid = np.array([row[3] for row in grid])
-    alpha_grid = np.array([row[4] for row in grid])
+    alpha_grid = np.array([pow(10,row[4]) for row in grid])
     phase_grid =  np.array([100*row[5:] for row in grid])
 
     PT = np.vstack((pressure_grid, temperature_grid)).T

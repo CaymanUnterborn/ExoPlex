@@ -40,6 +40,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
         P_points_water = Pressure_layers[(num_mantle_layers+num_core_layers):]
         T_points_water = Temperature_layers[(num_mantle_layers+num_core_layers):]
         water_rho = get_water_rho(P_points_water, T_points_water,grids)
+
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
     core_data = get_core_rho(grids[2], Core_wt_per, P_core, T_core)
@@ -130,10 +131,11 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     mantle_data = np.append(LM_data, UM_data)
     P_mantle = Pressure_layers[num_core_layers:num_core_layers+num_mantle_layers]
+
     for i in range(len(mantle_data)-1)[::-1]:
         if mantle_data[i+1] > mantle_data[i]:
-            drhodP = (mantle_data[i+1]-mantle_data[i+2])/(P_mantle[i+1]-P_mantle[i+2])
-            rho_layers[i] =mantle_data[i+1] + (P_mantle[i]-P_mantle[i+1])* drhodP
+            drhodP = (mantle_data[i+1]-mantle_data[i+30])/(P_mantle[i+1]-P_mantle[i+30])
+            mantle_data[i] =mantle_data[i+1] + (P_mantle[i]-P_mantle[i+1])* drhodP
 
     if number_h2o_layers > 0:
         rho_layers = np.concatenate((core_data,mantle_data,water_rho))
@@ -226,13 +228,16 @@ def get_water_rho(Pressure,Temperature,grids):
             Water_density[i] = den_noT/corr
 
         elif np.isnan(Water_density[i]) == True:
-            print("outside of water grid")
-            print(Water_density[i])
+            print("outside of water grid at P, T:")
             print(Pressure[i]/10/1000, "GPa",Temperature[i],"K")
 
 
             sys.exit()
 
+    for i in range(len(Water_density) - 1)[::-1]:
+        if Water_density[i + 1] > Water_density[i]:
+            drhodP = (Water_density[i + 1] - Water_density[i + 30]) / (Pressure[i + 1] - Pressure[i + 30])
+            Water_density[i] = Water_density[i + 1] + (Pressure[i] - Pressure[i + 1]) * drhodP
 
     return Water_density
 
@@ -255,7 +260,7 @@ def get_water_Cp(Pressure, Temperature,grids):
 
     """
 
-    interpolator_cp_water = grids[2]['cp']
+    interpolator_cp_water = grids[3]['cp']
 
     mesh_water = np.vstack((Pressure, Temperature)).T
     Water_Cp = interpolator_cp_water(mesh_water)
@@ -289,16 +294,16 @@ def get_water_alpha(Pressure,Temperature,grids):
     a0 = -3.9e-4
     a1 = 1.5e-6
 
-    interpolator_alpha_water = grids[2]['cp']
+    interpolator_alpha_water = grids[3]['alpha']
 
     mesh_water = np.vstack((Pressure, Temperature)).T
     Water_alpha = interpolator_alpha_water(mesh_water)
+
 
     for i in range(len(Water_alpha)):
         if np.isnan(Water_alpha[i]) == True:
             at = a0 + (a1 * Temperature[i])
             Water_alpha[i] = (at * pow(1 + ((Ksp / Ks) * Pressure[i]/10/1000), -0.9))  # Fei 94, pressure in Gpa
-
     return Water_alpha
 
 
@@ -463,7 +468,7 @@ def get_pressure(Planet,layers):
         return pressure[::-1]
 
 
-def get_radius(Planet,layers):
+def get_radius(Planet,wt_frac_water,core_mass_frac,layers):
     """
         This module calculates the radius of each individual shell profile of the planet
         using the equation for density given the density and mass lists.
@@ -480,15 +485,35 @@ def get_radius(Planet,layers):
             list of radius of each shell for water, mantle and core layers [kg/m^2]
 
     """
-    mass = Planet['mass']
+    Mass = Planet['mass'][-1]
     density = Planet['density']
-    radius =np.zeros(len(mass))
-    val = 4. * np.pi / 3.
+    val = 1./(4. * np.pi / 3.)
+    num_mantle_layers, num_core_layers, number_h2o_layers = layers
 
+    radius = np.zeros(sum(layers))
 
-    for i in range(len(radius))[1:]:
-        mass_lay = mass[i]-mass[i-1]
-        radius[i] = np.cbrt((mass_lay/((density[i]+density[i-1])/2)/val) +pow(radius[i-1],3.))
+    mass_lay_core = Mass * (1. - wt_frac_water) * core_mass_frac / num_core_layers
+    for i in range(num_core_layers)[1:]:
+        radius[i] = np.cbrt((mass_lay_core * val / ((density[i] + density[i - 1]) / 2.)) + pow(radius[i - 1], 3.))
+    mass_lay_mantle = Mass * (1. - wt_frac_water) * (1. - core_mass_frac) / num_mantle_layers
+    diff = num_core_layers
+
+    for i in range(num_mantle_layers):
+        if i == 0:
+            radius[i+diff] = np.cbrt((mass_lay_mantle * val / density[i+diff]) + pow(radius[i +diff - 1], 3.))
+        else:
+            radius[i+diff] = np.cbrt((mass_lay_mantle * val / ((density[i+diff] + density[i +diff- 1]) / 2.)) + pow(radius[i +diff- 1], 3.))
+
+    diff = num_core_layers+num_mantle_layers
+    if number_h2o_layers >0:
+        mass_lay_h2o = Mass * (wt_frac_water) / number_h2o_layers
+        for i in range(number_h2o_layers):
+            if i == 0:
+                radius[i+diff] = np.cbrt((mass_lay_h2o * val / density[i+diff]) + pow(radius[i +diff- 1], 3.))
+            else:
+                radius[i+diff] = np.cbrt(
+                    (mass_lay_h2o * val / ((density[i+diff] + density[i +diff- 1]) / 2.)) + pow(radius[i +diff- 1], 3.))
+
 
     return radius
 
