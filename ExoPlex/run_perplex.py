@@ -55,9 +55,15 @@ def run_perplex(*args):
     verbose = args[4]
     UMLM = args[5]
 
-    Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
-    Temperature_range_mantle=structure_params.get('Temperature_range_mantle_LM'),
-    resolution=structure_params.get('resolution_LM')
+    if UMLM == True:
+        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_UM')
+        Temperature_range_mantle=structure_params.get('Temperature_range_mantle_UM')
+        resolution=structure_params.get('resolution_UM')
+
+    else:
+        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
+        Temperature_range_mantle=structure_params.get('Temperature_range_mantle_LM')
+        resolution=structure_params.get('resolution_LM')
 
     plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
              + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
@@ -76,9 +82,20 @@ def run_perplex(*args):
     solutionFileNameMan_short[0:30] = []
 
     solutionFileNameMan = "".join(solutionFileNameMan_short)
-
     if use_grids == False:
-        filename = solutionFileNameMan
+            filename = solutionFileNameMan
+
+            if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_UM_results.txt') == True and UMLM == True:
+                filename = solutionFileNameMan
+                if verbose == True:
+                    print('The Upper mantle .tab already exists, please wait briefly for solution\n')
+                return '../Calc_Solutions/' + filename
+
+            if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_LM_results.txt') == True and UMLM == False:
+                filename = solutionFileNameMan
+                if verbose == True:
+                    print('The Lower mantle .tab already exists, please wait briefly for solution\n')
+                return '../Calc_Solutions/' + filename
 
     else:
 
@@ -87,32 +104,26 @@ def run_perplex(*args):
             test = filename.split('_')
             test[-1] = '0.15Fe'
             filename = '_'.join(test)
-        if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
+        elif os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
             if verbose == True:
                 print ('The Upper mantle .tab already exists\n')
             return '../Solutions_Small/' + filename
 
-        if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
+        elif os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
             if verbose == True:
                 print ('The Lower mantle .tab already exists\n')
             return '../Solutions_Small/' + filename
 
         else:
-            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt') == True and UMLM == True:
-                filename = solutionFileNameMan
-                if verbose == True:
-                    print ('The Upper mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
+            print("You have set use_grids to True but your composition does not exist within the grids.")
+            print("Try again with use_grids = False")
+            sys.exit()
 
-            if os.path.isfile('../Calc_Solutions/'+solutionFileNameMan+'_LM_results.txt') == True and UMLM == False:
-                filename = solutionFileNameMan
-                if verbose == True:
-                    print ('The Lower mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
-            else:
-                print("You have set use_grids to True but your composition does not exist within the grids.")
-                print("Try again with use_grids = False")
-                sys.exit()
+    if UMLM == True:
+        print("Upper Mantle:")
+    else:
+        print('Lower Mantle:')
+
 
     component1 = 'MGO'
     component2 = 'SIO2'
