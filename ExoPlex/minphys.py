@@ -134,7 +134,7 @@ def get_rho(Planet,grids,Core_wt_per,layers):
 
     for i in range(len(mantle_data)-1)[::-1]:
         if mantle_data[i+1] > mantle_data[i]:
-            drhodP = (mantle_data[i+1]-mantle_data[i+30])/(P_mantle[i+1]-P_mantle[i+30])
+            drhodP = (mantle_data[i+1]-mantle_data[i+5])/(P_mantle[i+1]-P_mantle[i+5])
             mantle_data[i] =mantle_data[i+1] + (P_mantle[i]-P_mantle[i+1])* drhodP
 
     if number_h2o_layers > 0:
@@ -236,7 +236,7 @@ def get_water_rho(Pressure,Temperature,grids):
 
     for i in range(len(Water_density) - 1)[::-1]:
         if Water_density[i + 1] > Water_density[i]:
-            drhodP = (Water_density[i + 1] - Water_density[i + 30]) / (Pressure[i + 1] - Pressure[i + 30])
+            drhodP = (Water_density[i + 1] - Water_density[i + 5]) / (Pressure[i + 1] - Pressure[i + 5])
             Water_density[i] = Water_density[i + 1] + (Pressure[i] - Pressure[i + 1]) * drhodP
 
     return Water_density
@@ -732,7 +732,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         for i in range(len(alpha_water))[::-1]:
             if i < len(alpha_water)-1:
                 if alpha_water[i] > 2*alpha_water[i+1]:
-                    dalpha_dr =  (alpha_water[i+1]- alpha_water[i+2])/(depths_water[i+1]-depths_water[i+2])
+                    dalpha_dr =  (alpha_water[i+1]- alpha_water[i+5])/(depths_water[i+1]-depths_water[i+5])
                     alpha_water[i] =alpha_water[i+1] + (depths_water[i]-depths_water[i+1])*dalpha_dr
 
         grav_func_water = spline(depths_water[::-1], gravity_water[::-1],k=3)
@@ -749,7 +749,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         for i in range(len(alpha_mant))[::-1]:
             if i < len(alpha_mant)-1:
                 if alpha_mant[i] > 2*alpha_mant[i+1]:
-                    dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
+                    dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+5])/(depths_mantle[i+1]-depths_mantle[i+5])
                     alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
 
         grav_func_mant = spline(depths_mantle[::-1], gravity_mantle[::-1], k=5)
@@ -782,7 +782,7 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         for i in range(len(alpha_mant))[::-1]:
             if i < len(alpha_mant)-1:
                 if alpha_mant[i] > 3*alpha_mant[i+1]:
-                    dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+2])/(depths_mantle[i+1]-depths_mantle[i+2])
+                    dalpha_dr =  (alpha_mant[i+1]- alpha_mant[i+5])/(depths_mantle[i+1]-depths_mantle[i+5])
                     alpha_mant[i] =alpha_mant[i+1] + (depths_mantle[i]-depths_mantle[i+1])*dalpha_dr
 
         grav_func_mant = spline(depths_mantle[::-1], gravity_mantle[::-1],k=4)
