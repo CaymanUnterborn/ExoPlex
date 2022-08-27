@@ -286,11 +286,26 @@ def get_phases(Planet,grids,layers,combine_phases):
     mesh_UM = np.vstack((P_points_UM, T_points_UM)).T
     Mantle_phases_UM = interpolator_phase_UM(mesh_UM)
 
-    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
-    Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
 
     mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
     Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
+
+
+    UM_phase_names = Planet['phase_names_low']
+    LM_phase_names = Planet['phase_names_high']
+
+    counter = 0
+
+    for i in range(len(UM_phase_names)):
+        for j in range(len(LM_phase_names))[counter:]:
+            if LM_phase_names[j] == UM_phase_names[i]:
+                counter+=1
+                break
+            else:
+                Mantle_phases_LM = np.insert(Mantle_phases_LM, counter,0,axis=1)
+                LM_phase_names = np.insert(LM_phase_names,counter,UM_phase_names[i])
+                counter+=1
+                break
 
     if (num_mantle_layers-len(P_points_UM)) > 0:
         Mantle_phases = np.concatenate((Mantle_phases_LM,Mantle_phases_UM),axis=0)
@@ -349,9 +364,9 @@ def get_phases(Planet,grids,layers,combine_phases):
         else:
             Phases[i] = np.hstack((Mantle_phases[i],Core_phases[i]))
 
-    phase_names = Planet['phase_names']
+    phase_names = UM_phase_names
 
-    if combine_phases == True:
+    if combine_phases == True and len(phase_names)>25:
         solutions = {'c2/c': 'c2c_ss', 'fc2/c': 'c2c_ss', 'per': 'ferropericlase', 'wus': 'ferropericlase',
                      'aperov': 'perovskite', 'fperov': 'perovskite', 'perov': 'perovskite',
                      'ab': 'plagioclase', 'an': 'plagioclase', 'sp': 'spinel', 'herc': 'spinel', 'fo': 'olivine',

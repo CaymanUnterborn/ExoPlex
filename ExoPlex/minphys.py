@@ -176,7 +176,7 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
     for i in range(len(core_rho)):
         if np.isnan(core_rho[i]) == True:
             impo = True
-            P_range.append(Pressure[i]*1e-4*1e9)
+            P_range.append(Pressure[i]*ToPa)
             T_range.append(Temperature[i])
             index.append(i)
 
@@ -566,7 +566,6 @@ def get_mantle_values_T(pressure, temperature, layers,grids):
         test = interpolator_cp_LM(mesh_switch)
 
         for i in range(len(test)):
-
             if np.isnan(test[i]) == True:
                 print ("at P ", to_switch_P[i] / 1e5, "T ",to_switch_T[i])
                 print ("UM Cp Outside of range!")
@@ -800,9 +799,9 @@ def get_temperature(Planet,grids,structural_parameters,layers):
         index = []
 
         for i in range(len(core_cp)):
-            if np.isnan(core_cp[i]) == True or np.isnan(core_cp[i]) == True:
+            if np.isnan(core_alpha[i]) == True or np.isnan(core_cp[i]) == True:
                 impo = True
-                P_range.append(P_core[i] * 1e-4 * 1e9)
+                P_range.append(P_core[i] * ToPa)
                 T_range.append(T_core[i])
                 index.append(i)
 
@@ -812,10 +811,9 @@ def get_temperature(Planet,grids,structural_parameters,layers):
             co_vals = co.evaluate(['thermal_expansivity','molar_heat_capacity_p'], P_range, T_range)
             counter = 0
             for i in index:
-                core_cp[i] = co_vals[1][counter]
+                core_cp[i] = co_vals[1][counter]*(1000./55.845)
                 core_alpha[i] = co_vals[0][counter]
                 counter += 1
-
 
         grav_func_core = spline(depths_core[::-1], gravity_core[::-1],k=3)
         spec_heat_func_core = spline(depths_core[::-1], core_cp[::-1],k=3)

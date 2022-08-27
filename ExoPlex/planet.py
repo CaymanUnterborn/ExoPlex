@@ -76,7 +76,7 @@ def initialize_by_mass(*args):
         CMB_T_guess = 6800
     CMB_P_guess = 10000*(262.*(Radius_planet_guess)-550.*pow(Radius_planet_guess,2.) + 432.*pow(Radius_planet_guess,3.))
     dP_dr = (CMB_P_guess)/(num_mantle_layers)
-    dT_dr = (CMB_T_guess-Mantle_potential_temp)/(num_mantle_layers)
+    dT_dr = 0.8*(CMB_T_guess-Mantle_potential_temp)/(num_mantle_layers)
 
     for i in range(num_layers):
 
