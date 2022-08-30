@@ -302,11 +302,12 @@ def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
     #Use ExoPlex pre-made grid
     if use_grids==True:
         in_grid = False
-        if np.where(range_FeO==Mantle_wt_per['FeO']/100)[0] > -1:
+        test = np.where(range_FeO == Mantle_wt_per['FeO'] / 100)[0]
+        if len(test) > 0:
             in_grid = True
 
-        if Mantle_wt_per.get('FeO') > 0 and in_grid == False:
-            return(make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM))
+        if Mantle_wt_per.get('FeO') / 100 > 0 and Mantle_wt_per['FeO'] / 100 <= 0.2 and in_grid == False:
+            return (make_mantle_feo_grid(Mantle_filename, Mantle_wt_per, UMLM))
 
 
         if UMLM == True:

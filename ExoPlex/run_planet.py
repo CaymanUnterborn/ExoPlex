@@ -127,8 +127,8 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     grids = [grids_low,grids_high,core_grid,water_grid]
 
     Planet = functions.find_Planet_mass(mass_planet, core_mass_frac,structure_params, compositional_params, grids, Core_wt_per, layers,verbose)
-    Planet['phase_names'] = names_low
-
+    Planet['phase_names_low'] = names_low
+    Planet['phase_names_high'] = names_high
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)
 
     return Planet
