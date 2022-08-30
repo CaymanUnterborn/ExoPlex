@@ -289,9 +289,6 @@ def get_phases(Planet,grids,layers,combine_phases):
     mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
     Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
 
-    mesh_LM = np.vstack((P_points_LM, T_points_LM)).T
-    Mantle_phases_LM = interpolator_phase_LM(mesh_LM)
-
     if (num_mantle_layers-len(P_points_UM)) > 0:
         Mantle_phases = np.concatenate((Mantle_phases_LM,Mantle_phases_UM),axis=0)
 
