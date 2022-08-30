@@ -24,7 +24,7 @@ comp_keys = ['wt_frac_water','FeMg','SiMg','CaMg','AlMg','wt_frac_FeO_wanted','w
 struct_keys = ['Pressure_range_mantle_UM','Temperature_range_mantle_UM','resolution_UM',
                          'Pressure_range_mantle_LM', 'Temperature_range_mantle_LM', 'resolution_LM',
                          'Mantle_potential_temp','water_potential_temp']
-combine_phases = True
+combine_phases = True #note this is automatically done when use_grids = False and cannot be changed
 use_grids = True
 
 import ExoPlex as exo

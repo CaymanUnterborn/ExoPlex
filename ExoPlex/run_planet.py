@@ -118,6 +118,7 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
         water_grid = []
 
     Mantle_filename = run_perplex.run_perplex(*[Mantle_wt_per,compositional_params,structure_params,filename,verbose,False])
+
     grids_high, names_high = make_grids.make_mantle_grid(Mantle_filename,Mantle_wt_per,False,use_grids)
     names_high.append('Fe')
 
@@ -131,4 +132,3 @@ def run_planet_mass(mass_planet, compositional_params, structure_params, layers,
     Planet['phases'],Planet['phase_names'] = functions.get_phases(Planet, grids, layers,get_phases)
 
     return Planet
-

@@ -36,39 +36,16 @@ def run_perplex(*args):
         Mantle phase diagram for the chosen composition. Contains P, T, expansivity, density and specific heat.
         Stored in /Calc_Solutions/'+filename, where filename is the chosen user name
     """
-
-
-    Mantle_wt_per = args[0]
     compositional_params = args[1]
-
-    structure_params = args[2]
+    verbose = args[4]
+    UMLM = args[5]
+    use_grids = compositional_params.get('use_grids')
 
     FeMg = compositional_params.get('FeMg')
     SiMg = compositional_params.get('SiMg')
     CaMg = compositional_params.get('CaMg')
     AlMg = compositional_params.get('AlMg')
     wt_frac_FeO_wanted = compositional_params.get('wt_frac_FeO_wanted')
-
-    use_grids = compositional_params.get('use_grids')
-
-    filename = args[3]
-    verbose = args[4]
-    UMLM = args[5]
-
-    if UMLM == True:
-        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_UM')
-        Temperature_range_mantle=structure_params.get('Temperature_range_mantle_UM')
-        resolution=structure_params.get('resolution_UM')
-
-    else:
-        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
-        Temperature_range_mantle=structure_params.get('Temperature_range_mantle_LM')
-        resolution=structure_params.get('resolution_LM')
-
-    plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
-             + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
-             + ' ' + str(Mantle_wt_per.get('Al2O3'))+ ' ' + str(0.) #last value included for Na
-
 
     solfileparamsString0 = '_' + str(round(SiMg, 3)) + '_' + str(round(FeMg, 3)) + '_' + str(
         round(CaMg, 3)) + '_' + str(round(AlMg, 3)) \
@@ -82,22 +59,20 @@ def run_perplex(*args):
     solutionFileNameMan_short[0:30] = []
 
     solutionFileNameMan = "".join(solutionFileNameMan_short)
+
     if use_grids == False:
-            filename = solutionFileNameMan
+        if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_UM_results.txt') == True and UMLM == True:
+            if verbose == True:
+                print('The Upper mantle .tab already exists, please wait briefly for solution\n')
+            return '../Calc_Solutions/' + solutionFileNameMan
 
-            if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_UM_results.txt') == True and UMLM == True:
-                filename = solutionFileNameMan
-                if verbose == True:
-                    print('The Upper mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
-
-            if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_LM_results.txt') == True and UMLM == False:
-                filename = solutionFileNameMan
-                if verbose == True:
-                    print('The Lower mantle .tab already exists, please wait briefly for solution\n')
-                return '../Calc_Solutions/' + filename
+        if os.path.isfile('../Calc_Solutions/' + solutionFileNameMan + '_LM_results.txt') == True and UMLM == False:
+            if verbose == True:
+                print('The Lower mantle .tab already exists, please wait briefly for solution\n')
+            return '../Calc_Solutions/' + solutionFileNameMan
 
     else:
+        filename = args[3]
 
         check_FeO = float(filename.split('_')[-1].split('Fe')[0])
         if check_FeO <= 0.2 and check_FeO >0:
@@ -120,11 +95,25 @@ def run_perplex(*args):
             print("Try again with use_grids = False")
             sys.exit()
 
+    Mantle_wt_per = args[0]
+    structure_params = args[2]
     if UMLM == True:
-        print("Upper Mantle:")
+        print("Running PerPlex for Upper Mantle:")
+        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_UM')
+        Temperature_range_mantle = structure_params.get('Temperature_range_mantle_UM')
+        resolution = structure_params.get('resolution_UM')
     else:
-        print('Lower Mantle:')
+        print("Running PerPlex for Lower Mantle:")
+        Pressure_range_mantle = structure_params.get('Pressure_range_mantle_LM')
+        Temperature_range_mantle = structure_params.get('Temperature_range_mantle_LM')
+        resolution = structure_params.get('resolution_LM')
 
+
+
+
+    plxMan = str(Mantle_wt_per.get('MgO')) + ' ' + str(Mantle_wt_per.get('SiO2')) + ' ' \
+             + str(Mantle_wt_per.get('FeO')) + ' ' + str(Mantle_wt_per.get('CaO')) \
+             + ' ' + str(Mantle_wt_per.get('Al2O3')) + ' ' + str(0.)  # last value included for Na
 
     component1 = 'MGO'
     component2 = 'SIO2'
@@ -311,9 +300,9 @@ def run_perplex(*args):
         print ("Done with PerPlex")
 
     if UMLM == True:
-        os.rename(solutionFileNameMan+'_1.tab','../Calc_Solutions/'+filename+'_UM_results.txt')
+        os.rename(solutionFileNameMan+'_1.tab','../Calc_Solutions/'+solutionFileNameMan+'_UM_results.txt')
     else:
-        os.rename(solutionFileNameMan + '_1.tab', '../Calc_Solutions/' + filename + '_LM_results.txt')
+        os.rename(solutionFileNameMan + '_1.tab', '../Calc_Solutions/' + solutionFileNameMan + '_LM_results.txt')
 
     os.remove(solutionFileNameMan+'.arf')
     os.remove(solutionFileNameMan+'.blk')
@@ -323,7 +312,7 @@ def run_perplex(*args):
     os.remove(solutionFileNameMan+'_seismic_data.txt')
     os.remove(solutionFileNameMan+'_auto_refine.txt')
 
-    filename = '../Calc_Solutions/'+filename
+    filename = '../Calc_Solutions/'+solutionFileNameMan
 
     return filename
 
