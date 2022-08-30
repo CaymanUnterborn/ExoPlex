@@ -79,12 +79,13 @@ def run_perplex(*args):
             test = filename.split('_')
             test[-1] = '0.15Fe'
             filename = '_'.join(test)
-        elif os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True and use_grids==True:
+
+        if os.path.isfile('../Solutions_Small/'+filename+'_UM_results.txt') and UMLM == True:
             if verbose == True:
                 print ('The Upper mantle .tab already exists\n')
             return '../Solutions_Small/' + filename
 
-        elif os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False and use_grids==True:
+        if os.path.isfile('../Solutions_Small/'+filename+'_LM_results.txt') and UMLM == False:
             if verbose == True:
                 print ('The Lower mantle .tab already exists\n')
             return '../Solutions_Small/' + filename
