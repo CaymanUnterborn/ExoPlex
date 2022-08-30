@@ -1,7 +1,7 @@
 import os
 import sys
 import pexpect as pe
-
+import numpy as np
 
 # hack to allow scripts to be placed in subdirectories next to ExoPlex:
 if not os.path.exists('ExoPlex') and os.path.exists('../ExoPlex'):
@@ -73,9 +73,12 @@ def run_perplex(*args):
 
     else:
         filename = args[3]
+        range_FeO = np.array([0., .02, .04, .06, .08, .1, .15, .20])
+
+        test = np.where(range_FeO == wt_frac_FeO_wanted)[0]
 
         check_FeO = float(filename.split('_')[-1].split('Fe')[0])
-        if check_FeO <= 0.2 and check_FeO >0:
+        if check_FeO <= 0.2 and check_FeO >0 and len(test) == 0:
             test = filename.split('_')
             test[-1] = '0.15Fe'
             filename = '_'.join(test)
