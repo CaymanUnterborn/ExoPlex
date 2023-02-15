@@ -324,7 +324,6 @@ def get_phases(Planet,grids,layers,combine_phases):
 
     if number_h2o_layers>0:
         interpolator_phase_water = grids[3]['phases']
-
         water_P = Planet['pressure']
         water_T = Planet['temperature']
 
@@ -362,10 +361,14 @@ def get_phases(Planet,grids,layers,combine_phases):
     for i in range(sum(layers)):
         if number_h2o_layers > 0:
             Phases[i] = np.hstack((Mantle_phases[i],Core_phases[i],Water_phases[i]))
+            water_phases = Planet['water_phases']
+            phase_names = UM_phase_names + water_phases
+
+
         else:
             Phases[i] = np.hstack((Mantle_phases[i],Core_phases[i]))
 
-    phase_names = UM_phase_names
+            phase_names = UM_phase_names
 
     if combine_phases == True and len(phase_names)>25:
         solutions = {'c2/c': 'c2c_ss', 'fc2/c': 'c2c_ss', 'per': 'ferropericlase', 'wus': 'ferropericlase',
@@ -464,7 +467,7 @@ def write(Planet,filename):
                 header=string_element, footer='', comments='# ')
 
     print()
-    print("Detailed data file written to:", filename+'.txt')
+    print("Detailed data file written to:", filename+'.csv')
     print()
     return 0
 
@@ -483,7 +486,8 @@ def calc_planet_radius(mass_guess,args):
     Planet = planet.initialize_by_mass(
         *[mass_guess, structure_params, compositional_params, layers, core_mass_frac])
 
-    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
+
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, compositional_params, core_mass_frac,layers, verbose])
     if verbose == True:
         print()
         print("Difference between actual and guess radius = ", radius_planet - (Planet['radius'][-1]/6371e3))
@@ -528,7 +532,7 @@ def find_Planet_radius(radius_planet, core_mass_frac, structure_params, composit
     Planet = planet.initialize_by_mass(
         *[Mass, structure_params, compositional_params, layers, core_mass_frac])
 
-    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, layers, verbose])
+    Planet = planet.compress_mass(*[Planet, grids, Core_wt_per, structure_params, compositional_params, core_mass_frac,layers, verbose])
 
     return Planet
 
