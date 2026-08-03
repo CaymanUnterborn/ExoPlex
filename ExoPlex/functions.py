@@ -411,7 +411,6 @@ def get_phases(Planet,grids,layers,combine_phases):
                 solution_to_put = solutions.get(phase_name)
                 phase_amounts.update({solution_to_put: phase_amounts.get(solution_to_put) + phase_line[j]})
 
-
             for k in new_names:
                line_output.append(phase_amounts.get(k))
 

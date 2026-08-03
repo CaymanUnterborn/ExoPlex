@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import Delaunay
 from scipy.interpolate import LinearNDInterpolator
-
+import pandas as pd
 
 #constants, atomic masses
 mFe = 55.845
@@ -13,79 +13,42 @@ mCa = 40.078
 mAl = 26.981
 range_FeO = np.array([0., .02, .04, .06, .08, .1, .15, .20])
 
-
 def make_core_grid():
 
-    file = open('../Solutions_Small/liquid_iron_grid.dat')
-
-    temp_file = file.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows-1
-            start+=1
-
-    start = 1
-
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-
-    pressure_grid = np.array([row[0] for row in grid])
-    temperature_grid = np.array([row[1] for row in grid])
-    density_grid = np.array([row[2] for row in grid])
-    alpha_grid = [pow(10,row[3]) for row in grid]
-    cp_grid = [row[4] for row in grid]
+    filename = '../Solutions_Small/liquid_iron_grid.dat'
+    df = pd.read_csv(filename)
+    df = df.iloc[::10]
+    df.rename(columns={'# P_bar': 'P_bar'},inplace=True)
+    pressure_grid = np.array(df['P_bar'])
+    temperature_grid = np.array(df['T_K'])
+    density_grid = np.array(df['rho_kgm3'])
+    alpha_grid = np.array(pow(10,df['alpha_1_K']))
+    cp_grid = np.array(df['Cp_J_K_mol'])
 
     PT = np.vstack((pressure_grid, temperature_grid)).T
     tri_PT = Delaunay(PT)  # Compute the triangulation
-    interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-    interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-    interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
+    interpolator_rho = LinearNDInterpolator(tri_PT, density_grid)
+    interpolator_alpha = LinearNDInterpolator(tri_PT, alpha_grid)
+    interpolator_CP = LinearNDInterpolator(tri_PT, cp_grid)
 
     keys = ['density','alpha','cp']
     return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP]))
 
 def make_water_grid():
-
-    file = open('../Solutions_Small/water_grid.dat')
-    temp_file = file.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows-1
-            start+=1
-
-    start = 1
-    phase_grid = []
-
-
-    data = temp_file[start:]
-    header = temp_file[0].strip('\n').split(',')
-    Phases = header[5:]
+    filename = '../Solutions_Small/water_grid.dat'
+    df = pd.read_csv(filename)
+    df.rename(columns={'# P': 'P'}, inplace=True)
+    pressure_grid = np.array(df['P'])
+    temperature_grid = np.array(df['T'])
+    density_grid = np.array(df['density'])
+    alpha_grid = np.array(pow(10, df['alpha']))
+    cp_grid = np.array(df['Cp'])
+    phase_names = (np.array(df.columns[df.columns.get_loc("alpha") + 1:])).tolist()
+    phase_grid = df[phase_names]
+    df['sum_phases'] = phase_grid.sum(axis=1)
+    phase_grid = np.asarray(100 * df[phase_names].div(df["sum_phases"], axis=0))
 
 
-    grid = np.zeros((num_rows, num_columns))
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-    pressure_grid = np.array([row[0] for row in grid])
-    temperature_grid = np.array([row[1] for row in grid])
-    density_grid = np.array([row[2] for row in grid])
-    cp_grid = np.array([row[3] for row in grid])
-    alpha_grid = np.array([pow(10,row[4]) for row in grid])
-    phase_grid =  np.array([100*row[5:] for row in grid])
 
     PT = np.vstack((pressure_grid, temperature_grid)).T
     tri_PT = Delaunay(PT)  # Compute the triangulation
@@ -96,7 +59,7 @@ def make_water_grid():
 
     keys = ['density', 'alpha', 'cp', 'phases']
 
-    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])),Phases
+    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])),phase_names
 
 def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
 
@@ -111,7 +74,7 @@ def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
     mol_Fe_act = (mu_bar / (mFe + mO)) * (-1 + 1 / (1 - FeO_act))
 
     FeO_file_1 = float('%.02f' % (range_FeO[(np.abs(range_FeO - FeO_act)).argmin()]))
-    FeO_file_1_id = int(np.where(range_FeO == FeO_file_1)[0])
+    FeO_file_1_id = int((np.where(range_FeO == FeO_file_1))[0][0])
     if FeO_act > FeO_file_1:
 
         FeO_file_2_id = FeO_file_1_id + 1
@@ -142,61 +105,33 @@ def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
     assert X_mol_up >= 0 and X_wt_up > 0, "Problem"
 
     if UMLM == True:
-        file_1 = open(filename_up + '_UM_results.txt', 'r')
-        file_2 = open(filename_down + '_UM_results.txt', 'r')
+        file_open_1 = filename_up + '_UM_results.txt'
+        file_open_2 = filename_down + '_UM_results.txt'
         P_up = 1390000
         P_down = 1
         T_up = 3300
         T_down = 1500
     else:
-        file_1 = open(filename_up + '_LM_results.txt', 'r')
-        file_2 = open(filename_down + '_LM_results.txt', 'r')
+        file_open_1 = filename_up + '_LM_results.txt'
+        file_open_2 = filename_down + '_LM_results.txt'
         P_up = 27000000.0
         P_down = 1250000.0
         T_up = 6800
         T_down = 1750
 
-    temp_file = file_1.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-    start = 1
+    df = pd.read_csv(file_open_1)
+    df = df.iloc[::3]
 
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows - 1
-            start += 1
-
-    header = temp_file[0].strip('\n').split(',')
-
-    Phases = header[5:-1]
-    for i in range(len(Phases)):
-        Phases[i] = Phases[i].strip()
-
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-    ##
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-    num_phases = len(grid[0][5:]) - 1
-
-    temperature_grid_up = np.array([row[1] for row in grid])
-    pressure_grid_up = np.array([row[0] for row in grid])
-    density_grid_up = np.array([X_wt_up * row[2] * 1000 for row in grid])
-    alpha_grid_up = [X_mol_up * pow(10, row[3]) for row in grid]
-    cp_grid_up = [X_wt_up * row[4] for row in grid]
-    phase_grid_up = [X_mol_up * row[5:-1] for row in grid]
+    df.rename(columns={'#P[bar]': 'P[bar]'}, inplace=True)
+    df.columns = df.columns.str.lstrip()
+    pressure_grid_up = np.array(df['P[bar]'])
+    temperature_grid_up = np.array(df['T[K]'])
+    density_grid_up = np.array(X_wt_up *1000 * df['rho[g/cm3]'])
+    alpha_grid_up = np.array(X_mol_up*pow(10, df['log10(alpha)[1/K]']))
+    cp_grid_up = np.array(X_wt_up*df['cp[J/(kg*K)]'])
+    phase_names_up = (np.array(df.columns[df.columns.get_loc("cp[J/(kg*K)]") + 1:-1])).tolist()
+    phase_grid_up = X_wt_up*df[phase_names_up]
+    num_phases = len(phase_names_up)
 
     PT = np.vstack((pressure_grid_up, temperature_grid_up)).T
     tri_PT = Delaunay(PT)  # Compute the triangulation
@@ -206,41 +141,17 @@ def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
     interpolator_phases_up = LinearNDInterpolator(tri_PT, np.array(phase_grid_up))
 
     ##
-    temp_file = file_2.readlines()
-    num_rows = len(temp_file[1:])
-    num_columns = len(temp_file[12].split(','))
-    start = 1
-
-    for i in temp_file[1:]:
-        if i[0] == '#':
-            num_rows = num_rows - 1
-            start += 1
-
-    header = temp_file[0].strip('\n').split(',')
-
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-        ##
-    data = temp_file[start:]
-    grid = np.zeros((num_rows, num_columns))
-
-    for i in range(num_rows):
-        # for j in range(num_columns):
-        columns = data[i].strip('\n').split(',')
-        grid[i] = [float(j) for j in columns]
-
-    temperature_grid_down = np.array([row[1] for row in grid])
-    pressure_grid_down = np.array([row[0] for row in grid])
-    density_grid_down = np.array([(1 - X_wt_up) * row[2] * 1000 for row in grid])
-    alpha_grid_down = [(1 - X_mol_up) * pow(10, row[3]) for row in grid]
-    cp_grid_down = [(1 - X_wt_up) * row[4] for row in grid]
-    phase_grid_down = [(1 - X_mol_up) * row[5:-1] for row in grid]
+    df = pd.read_csv(file_open_2)
+    df = df.iloc[::3]
+    df.rename(columns={'#P[bar]': 'P[bar]'}, inplace=True)
+    df.columns = df.columns.str.lstrip()
+    pressure_grid_down= np.array(df['P[bar]'])
+    temperature_grid_down = np.array(df['T[K]'])
+    density_grid_down = np.array((1.-X_wt_up) *1000 * df['rho[g/cm3]'])
+    alpha_grid_down = np.array((1.-X_mol_up)*pow(10, df['log10(alpha)[1/K]']))
+    cp_grid_down = np.array((1.-X_wt_up)*df['cp[J/(kg*K)]'])
+    phase_names_down = (np.array(df.columns[df.columns.get_loc("cp[J/(kg*K)]") + 1:-1])).tolist()
+    phase_grid_down = (1.-X_wt_up)*df[phase_names_down]
 
     PT = np.vstack((pressure_grid_down, temperature_grid_down)).T
     tri_PT = Delaunay(PT)  # Compute the triangulation
@@ -274,7 +185,7 @@ def make_mantle_feo_grid(Mantle_filename,Mantle_wt_per,UMLM):
 
     keys = ['density', 'alpha', 'cp', 'phases']
 
-    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])), Phases
+    return dict(zip(keys, [interpolator_rho, interpolator_alpha, interpolator_CP, interpolator_phases])), phase_names_up
 
 def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
     """
@@ -311,57 +222,36 @@ def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
 
 
         if UMLM == True:
-            file = open(Mantle_filename+'_UM_results.txt','r')
+            filename = Mantle_filename+'_UM_results.txt'
+
         else:
-            file = open(Mantle_filename+'_LM_results.txt','r')
-        temp_file = file.readlines()
-        num_rows = len(temp_file[1:])
-        num_columns = len(temp_file[12].split(','))
-        start = 1
+            filename = Mantle_filename+'_LM_results.txt'
 
-        for i in temp_file[1:]:
-            if i[0] == '#':
-                num_rows = num_rows-1
-                start+=1
+        df = pd.read_csv(filename)
+        df = df.iloc[::2]
 
-
-        header = temp_file[0].strip('\n').split(',')
-
-        Phases = header[5:-1]
-        for i in range(len(Phases)):
-            Phases[i] = Phases[i].strip()
-
-
-        #calculate number of rows getting rid of #'s
-
-        data = temp_file[start:]
-        grid = np.zeros((num_rows,num_columns))
-
-        for i in range(num_rows):
-            #for j in range(num_columns):
-            columns = data[i].strip('\n').split(',')
-            grid[i] = [float(j) for j in columns]
-
-        num_phases = len(grid[0][5:])-1
-
-        temperature_grid = np.array([row[1] for row in grid])
-
-        pressure_grid = np.array([row[0] for row in grid])
-        density_grid = np.array([row[2]*1000 for row in grid])
-        alpha_grid = [pow(10,row[3]) for row in grid]
-        cp_grid = [row[4] for row in grid]
-        phase_grid = [row[5:-1] for row in grid]
+        df.rename(columns={'#P[bar]': 'P[bar]'}, inplace=True)
+        df.columns = df.columns.str.lstrip()
+        pressure_grid = np.array(df['P[bar]'])
+        temperature_grid = np.array(df['T[K]'])
+        density_grid = np.array(1000*df['rho[g/cm3]'])
+        alpha_grid = np.array(pow(10, df['log10(alpha)[1/K]']))
+        cp_grid = np.array(df['cp[J/(kg*K)]'])
+        phase_names = (np.array(df.columns[df.columns.get_loc("cp[J/(kg*K)]") + 1:])).tolist()
+        phase_grid = df[phase_names]
+        df['sum_phases'] = phase_grid.sum(axis=1)
+        phase_grid = np.asarray(100*df[phase_names].div(df["sum_phases"], axis=0))
 
         PT = np.vstack((pressure_grid, temperature_grid)).T
         tri_PT = Delaunay(PT)  # Compute the triangulation
-        interpolator_rho = LinearNDInterpolator(tri_PT, np.array(density_grid))
-        interpolator_alpha = LinearNDInterpolator(tri_PT, np.array(alpha_grid))
-        interpolator_CP = LinearNDInterpolator(tri_PT, np.array(cp_grid))
-        interpolator_phases = LinearNDInterpolator(tri_PT, np.array(phase_grid))
+        interpolator_rho = LinearNDInterpolator(tri_PT, density_grid)
+        interpolator_alpha = LinearNDInterpolator(tri_PT, alpha_grid)
+        interpolator_CP = LinearNDInterpolator(tri_PT, cp_grid)
+        interpolator_phases = LinearNDInterpolator(tri_PT, phase_grid)
 
         keys = ['density','alpha','cp','phases']
 
-        return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP,interpolator_phases])),Phases
+        return dict(zip(keys,[interpolator_rho,interpolator_alpha,interpolator_CP,interpolator_phases])),phase_names
 
     else:
         #Use PerPlex derived grid
