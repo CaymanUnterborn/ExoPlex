@@ -139,43 +139,43 @@ if __name__ == "__main__":
     #exo.functions.write(Planet,Output_filename)
 
     #Now let us plot
-    # import matplotlib.pyplot as plt
-    #
-    # figure = plt.figure(figsize=(10, 9))
-    #
-    # ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
-    # ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
-    # ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
-    # ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
-    #
-    # ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
-    # ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
-    # ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
-    # ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
-    # ax1.minorticks_on()
-    # text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
-    # ax1.text(0.05, 0.95, text)
-    #
-    # # Make a subplot showing the calculated pressure profile
-    # ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
-    # ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
-    # ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
-    # ax2.set_ylabel("Pressure (GPa)")
-    # ax2.minorticks_on()
-    #
-    # # Make a subplot showing the calculated gravity profile
-    # ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
-    # ax3.set_ylabel("Gravity (m/s$^2)$")
-    # ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
-    # ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
-    # ax3.minorticks_on()
-    #
-    # # Make a subplot showing the calculated temperature profile
-    # ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
-    # ax4.set_ylabel("Temperature ($K$)")
-    # ax4.set_xlabel("Radius (km)")
-    # ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
-    # ax4.set_ylim(0., max(Planet['temperature']) + 300)
-    # ax4.minorticks_on()
-    #
-    # plt.show()
+    import matplotlib.pyplot as plt
+
+    figure = plt.figure(figsize=(10, 9))
+
+    ax1 = plt.subplot2grid((6, 3), (0, 0), colspan=3, rowspan=3)
+    ax2 = plt.subplot2grid((6, 3), (3, 0), colspan=3, rowspan=1)
+    ax3 = plt.subplot2grid((6, 3), (4, 0), colspan=3, rowspan=1)
+    ax4 = plt.subplot2grid((6, 3), (5, 0), colspan=3, rowspan=1)
+
+    ax1.plot(Planet['radius'] / 1.e3, Planet['density'] / 1.e3, 'k', linewidth=2.)
+    ax1.set_ylim(0., (max(Planet['density']) / 1.e3) + 1.)
+    ax1.set_xlim(0., max(Planet['radius']) / 1.e3)
+    ax1.set_ylabel("Density ( $\cdot 10^3$ kg/m$^3$)")
+    ax1.minorticks_on()
+    text = '%.3f' % (Planet['radius'][-1] / 6371e3) + ' Earth radii on last iteration'
+    ax1.text(0.05, 0.95, text)
+
+    # Make a subplot showing the calculated pressure profile
+    ax2.plot(Planet['radius'] / 1.e3, Planet['pressure'] / 1.e4, 'b', linewidth=2.)
+    ax2.set_ylim(0., (max(Planet['pressure']) / 1e4) + 10.)
+    ax2.set_xlim(0., max(Planet['radius']) / 1.e3)
+    ax2.set_ylabel("Pressure (GPa)")
+    ax2.minorticks_on()
+
+    # Make a subplot showing the calculated gravity profile
+    ax3.plot(Planet['radius'] / 1.e3, Planet['gravity'], 'r', linewidth=2.)
+    ax3.set_ylabel("Gravity (m/s$^2)$")
+    ax3.set_xlim(0., max(Planet['radius']) / 1.e3)
+    ax3.set_ylim(0., max(Planet['gravity']) + 0.5)
+    ax3.minorticks_on()
+
+    # Make a subplot showing the calculated temperature profile
+    ax4.plot(Planet['radius'] / 1.e3, Planet['temperature'], 'g', linewidth=2.)
+    ax4.set_ylabel("Temperature ($K$)")
+    ax4.set_xlabel("Radius (km)")
+    ax4.set_xlim(0., max(Planet['radius']) / 1.e3)
+    ax4.set_ylim(0., max(Planet['temperature']) + 300)
+    ax4.minorticks_on()
+
+    plt.show()
