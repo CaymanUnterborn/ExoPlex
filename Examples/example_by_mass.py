@@ -99,7 +99,6 @@ if __name__ == "__main__":
 
 
     layers = [num_mantle_layers,num_core_layers,number_h2o_layers]
-
     #This is where we actually run the planet. First PerPlex grids of mineralogy, density,
     #Cp and alpha are calculated and stored in the Solutions folder. If the file already exists
     #(in name, not necessarily in composition), then PerPlex is not run again.

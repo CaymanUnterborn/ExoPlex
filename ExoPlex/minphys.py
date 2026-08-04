@@ -44,7 +44,6 @@ def get_rho(Planet,grids,Core_wt_per,layers):
     P_core = Pressure_layers[:num_core_layers]
     T_core = Temperature_layers[:num_core_layers]
     core_data = get_core_rho(grids[2], Core_wt_per, P_core, T_core)
-
     for i in range(num_core_layers):
         if i < num_core_layers:
             rho_layers[i] = core_data[i]
@@ -162,10 +161,7 @@ def get_core_rho(grid,Core_wt_per,Pressure,Temperature):
     mol_frac_O = (wt_frac_O / mO / 100) / mol_total
 
     molar_weight_core = (mol_frac_Fe * mFe) + (mol_frac_Si * mSi) + (mol_frac_O * mO) + (mol_frac_S * mS)
-
-
     interpolator_rho = grid['density']
-
     mesh_core = np.vstack((Pressure, Temperature)).T
     core_rho = interpolator_rho(mesh_core)
 
@@ -847,11 +843,9 @@ def check_convergence(new_rho,old_rho):
             densities of current iteration
          """
 
-    delta = ([(1.-(old_rho[i]/new_rho[i])) for i in range(len(new_rho))[1:]])
-
-    for i in range(len(delta)):
-        if abs(delta[i]) >= pow(10,-3):
-            return False,new_rho
+    delta = np.abs(1.-np.array(old_rho)/np.array(new_rho))
+    if np.any(delta > pow(10,-3)):
+        return False, new_rho
 
     return True, new_rho
 
