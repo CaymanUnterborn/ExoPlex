@@ -280,8 +280,10 @@ def get_phases(Planet,grids,layers,combine_phases):
             P_points_LM.append(mantle_pressures[i])
             T_points_LM.append(mantle_temperatures[i])
 
-    interpolator_phase_UM = grids[0]['phases']
-    interpolator_phase_LM = grids[1]['phases']
+    UM_grid = grids.get('UM')
+    LM_grid = grids.get('LM')
+    interpolator_phase_UM = UM_grid['phases']
+    interpolator_phase_LM = LM_grid['phases']
 
     mesh_UM = np.vstack((P_points_UM, T_points_UM)).T
     Mantle_phases_UM = interpolator_phase_UM(mesh_UM)
@@ -323,7 +325,8 @@ def get_phases(Planet,grids,layers,combine_phases):
 
 
     if number_h2o_layers>0:
-        interpolator_phase_water = grids[3]['phases']
+        water_grid = grids.get('Water')
+        interpolator_phase_water = water_grid['phases']
         water_P = Planet['pressure']
         water_T = Planet['temperature']
 
