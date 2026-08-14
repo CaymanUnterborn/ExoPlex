@@ -231,6 +231,7 @@ def make_mantle_grid(Mantle_filename,Mantle_wt_per,UMLM,use_grids):
         df = df.iloc[::2]
 
         df.rename(columns={'#P[bar]': 'P[bar]'}, inplace=True)
+        df.rename(columns={'# P[bar]': 'P[bar]'}, inplace=True)
         df.columns = df.columns.str.lstrip()
         pressure_grid = np.array(df['P[bar]'])
         temperature_grid = np.array(df['T[K]'])
